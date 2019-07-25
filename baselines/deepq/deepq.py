@@ -15,6 +15,7 @@ from baselines.common import set_global_seeds
 from baselines import deepq
 from baselines.deepq.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
 from baselines.deepq.utils import ObservationInput
+from baselines.constraint.deepq.utils import ConstraintStateAugmentedInput
 
 from baselines.common.tf_util import get_session
 from baselines.deepq.models import build_q_func
@@ -189,6 +190,7 @@ def learn(env,
     sess = get_session()
     set_global_seeds(seed)
 
+    constraints, aug_type = find_constraints(env)
     q_func = build_q_func(network, **network_kwargs)
 
     # capture the shape outside the closure so that the env object is not serialized
@@ -196,6 +198,10 @@ def learn(env,
 
     observation_space = env.observation_space
     def make_obs_ph(name):
+        if aug_type == 'constraint_state_product':
+            return ConstraintStateAugmentedInput(observation_space, constraints, name=name)
+        elif aug_type is not None:
+            raise Exception('Constraint augmentation {} not implemented'.format(aug_type))
         return ObservationInput(observation_space, name=name)
 
     act, train, update_target, debug = deepq.build_train(
@@ -330,3 +336,11 @@ def learn(env,
             load_variables(model_file)
 
     return act
+
+def find_constraints(env):
+    if hasattr(env, 'constraints'):
+        if env.augmentation_type != None:
+            return env.constraints, env.augmentation_type
+    elif hasattr(env, 'env'):
+        return find_constraints(env.env)
+    return None, None

@@ -11,6 +11,7 @@ from baselines.common.vec_env import VecFrameStack, VecNormalize, VecEnv
 from baselines.common.vec_env.vec_video_recorder import VecVideoRecorder
 from baselines.common.cmd_util import common_arg_parser, parse_unknown_args, make_vec_env, make_env
 from baselines.common.tf_util import get_session
+from baselines.constraint import ConstraintStepMonitor, ConstraintEnv, get_constraint
 from baselines import logger
 from importlib import import_module
 
@@ -94,10 +95,13 @@ def build_env(args):
 
     if env_type in {'atari', 'retro'}:
         if alg == 'deepq':
+            if args.augmentation is not None: args.augmentation += '_product'
             env = make_env(env_id, env_type, seed=seed, wrapper_kwargs={'frame_stack': True})
         elif alg == 'trpo_mpi':
+            if args.augmentation is not None: args.augmentation += '_not_implemented'
             env = make_env(env_id, env_type, seed=seed)
         else:
+            if args.augmentation is not None: args.augmentation += '_concat'
             frame_stack_size = 4
             env = make_vec_env(env_id, env_type, nenv, seed, gamestate=args.gamestate, reward_scale=args.reward_scale)
             env = VecFrameStack(env, frame_stack_size)
@@ -114,6 +118,13 @@ def build_env(args):
 
         if env_type == 'mujoco':
             env = VecNormalize(env, use_tf=True)
+
+    if args.constraints is not None:
+        assert len(args.constraints) == len(args.reward_shaping) # should be parallel lists
+        constraints = [
+            get_constraint(s)(r) for (s, r) in zip(args.constraints, args.reward_shaping)
+        ]
+        env = ConstraintStepMonitor(ConstraintEnv(env, constraints, augmentation_type=args.augmentation, log_dir=logger.get_dir()), logger.get_dir())
 
     return env
 
