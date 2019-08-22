@@ -224,6 +224,9 @@ def main(args):
         rank = MPI.COMM_WORLD.Get_rank()
         configure_logger(args.log_path, format_strs=[])
 
+    import json
+    with open(osp.join(logger.get_dir(), 'args.json'), 'w') as arg_record_file:
+        json.dump(args.__dict__, arg_record_file)
     model, env = train(args, extra_args)
 
     if args.save_path is not None and rank == 0:
