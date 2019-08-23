@@ -1,6 +1,7 @@
 import luigi
-from baselines.slurm_task import SlurmTask, SlurmInfo
+#from .slurm_task import SlurmTask, SlurmInfo
 import itertools
+import subprocess
 
 cmd_line_params = {
     'env': [
@@ -16,14 +17,35 @@ cmd_line_params = {
 }
 
 
-class ProjectSlurmTask(SlurmTask):
-    def ex_hpc(self, command):
-        command = ['module', 'load', 'anaconda;'
-                   ] + ['conda', 'activate', 'tf1.14'] + command
-        return super(ProjectSlurmTask, self).ex_hpc(command)
+class SlurmTask(luigi.Task):
+    command = luigi.ListParameter()
+    time = luigi.Parameter()
+    mem = luigi.Parameter()
+    job_name = luigi.Parameter()
+    partition = luigi.Parameter()
+    gres = luigi.Parameter()
+    log_dir = luigi.Parameter()
+
+    def run(self):
+        file_string = "#!/bin/sh\n"
+        file_string += "#SBATCH --time={}\n".format(self.time)
+        file_string += "#SBATCH --mem={}\n".format(self.mem)
+        file_string += "#SBATCH --job-name={}\n".format(self.job_name)
+        file_string += "#SBATCH --partition={}\n".format(self.partition)
+        file_string += "#SBATCH --gres={}\n".format(self.gres)
+        file_string += '\n'
+        file_string += 'module load anaconda\n'
+        file_string += 'conda activate tf1.14\n'
+        file_string += 'OPENAI_LOGDIR="./openai_log/{}" '.format(self.log_dir)
+        print(file_string)
+
+    def output(self):
+        return [
+            luigi.LocalTarget('./openai_log/{}/log.txt'.format(self.log_dir))
+        ]
 
 
-class TrainModelTask(ProjectSlurmTask):
+class TrainModelTask(luigi.Task):
     env = luigi.Parameter()
     alg = luigi.Parameter()
     num_timesteps = luigi.IntParameter()
@@ -32,13 +54,7 @@ class TrainModelTask(ProjectSlurmTask):
     seed = luigi.IntParameter()
 
     def requires(self):
-        pass
-
-    def run(self):
-        command = [
-            'OPENAI_LOGDIR="./openai_log/${SLURM_JOBID}"', 'python', '-u',
-            '-m', 'baselines.run'
-        ]
+        command = ['python', '-u', '-m', 'baselines.run']
         # env
         command += ['--env', self.env]
         # alg
@@ -47,14 +63,28 @@ class TrainModelTask(ProjectSlurmTask):
         command += ['--num_timesteps', str(self.num_timesteps)]
         # constraints and reward shaping
         if len(self.constraints) > 0:
-            command += ['--constraints', str(self.constraints)[1:-1]]
-            command += ['--reward_shaping', str(self.constraints)[1:-1]]
+            command += ['--constraints', str(self.constraints)[1:-2]]
+            command += ['--reward_shaping', str(self.constraints)[1:-2]]
         # seed
         command += ['--seed', str(self.seed)]
-        self.ex_hpc(command)
+
+        log_dir = '_'.join(
+            [self.env, self.alg, str(self.num_timesteps)] + list(
+                itertools.chain.from_iterable(
+                    zip(self.constraints, map(str, self.reward_shaping)))))
+        return SlurmTask(command=command,
+                         time='2-00:00',
+                         mem='16000',
+                         job_name='rl_constraint',
+                         partition='scott',
+                         gres='gpu:1',
+                         log_dir=log_dir)
+
+    def run(self):
+        pass
 
     def output(self):
-        pass
+        return self.input()
 
 
 if __name__ == '__main__':
@@ -63,7 +93,4 @@ if __name__ == '__main__':
         for values in itertools.product(*cmd_line_params.values())
     ]
     print(all_args[0])
-    slurminfo = SlurmInfo('runmode_hpc', 'constrained_rl', 'scott', '1',
-                          '2-00:00', 'constrained_rl', '1 -gres=gpu:1')
-    luigi.build([TrainModelTask(**all_args[0], slurminfo=slurminfo)],
-                local_scheduler=True)
+    luigi.build([TrainModelTask(**all_args[0])], local_scheduler=True)
