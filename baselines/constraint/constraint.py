@@ -2,6 +2,7 @@ import itertools
 from collections import Counter
 
 import numpy as np
+import tensorflow as tf
 
 from baselines.constraint.dfa import DFA
 
@@ -25,6 +26,13 @@ class Constraint(DFA):
         self.s_active = s_active
         self.a_active = a_active
 
+        self.embedding_size = int(np.log2(self.num_states))
+        if self.embedding_size < 1:
+            self.embedding_size = 1
+        self.state_embeddings = tf.get_variable(
+            "{}_state_embeddings".format(self.name),
+            [self.num_states, self.embedding_size])
+
     def step(self, obs, action, done):
         is_viol = False
         if self.s_active and self.a_active:
@@ -36,8 +44,8 @@ class Constraint(DFA):
         rew_mod = self.violation_reward if is_viol else 0.
         return is_viol, rew_mod
 
-    def reset(self):
-        return super().reset()
+    def embedded_state(self, state):
+        return tf.nn.embedding_lookup(self.state_embeddings, state)
 
 
 class CountingPotentialConstraint(Constraint):
@@ -50,8 +58,9 @@ class CountingPotentialConstraint(Constraint):
                  a_tl=id_fn,
                  s_active=True,
                  a_active=True):
-        super(CountingPotentialConstraint, self).__init__(
-            name, reg_ex, violation_reward, s_tl, a_tl, s_active, a_active)
+        super(CountingPotentialConstraint,
+              self).__init__(name, reg_ex, violation_reward, s_tl, a_tl,
+                             s_active, a_active)
         self.episode_visit_count = Counter()
         self.visit_count = Counter(self.states())
         self.violation_count = Counter(self.accepting_states())
@@ -67,8 +76,8 @@ class CountingPotentialConstraint(Constraint):
         dfa_state = self.current_state
         self.episode_visit_count[dfa_state] += 1
 
-        current_viol_propn = (
-            self.violation_count[dfa_state] / self.visit_count[dfa_state])
+        current_viol_propn = (self.violation_count[dfa_state] /
+                              self.visit_count[dfa_state])
         prev_viol_propn = (self.violation_count[self.prev_state] /
                            self.visit_count[self.prev_state])
         rew_mod = (self.gamma * current_viol_propn -
