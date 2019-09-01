@@ -13,6 +13,7 @@ cmd_line_params = {
         '1d_dithering_dense'
     ],
     'reward_shaping': [0, -1, -10, -100],
+    'augmentation': ['constraint_state', 'action_history', None],
     'seed': [149876]
 }
 
@@ -48,6 +49,7 @@ def assemble_sbatch_file(slurm_dict, param_dict):
     command_str = ' '.join(command_list)
     for env_var in slurm_dict['env_vars']:
         command_str = env_var + ' ' + command_str
+    print(command_str)
     file_str += command_str
     return file_str
 
@@ -67,8 +69,11 @@ def run_all(slurm_dict, all_param_dict):
         dict(zip(all_param_dict.keys(), values))
         for values in itertools.product(*all_param_dict.values())
     ]
+    record_dict = {}
     for args_dict in all_args:
-        print(run(slurm_dict, args_dict))
+        job_id = run(slurm_dict, args_dict)
+        record_dict[str(args_dict)] = job_id
+    return record_dict
 
 
 if __name__ == '__main__':

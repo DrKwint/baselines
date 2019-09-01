@@ -53,20 +53,6 @@ def one_d_actuation_dense(reward_shaping):
                                        s_active=False)
 
 
-mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
-                                                        joint=0)
-mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
-                                                        joint=1)
-mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
-                                                        joint=2)
-mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
-                                                        joint=3)
-mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
-                                                        joint=4)
-mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
-                                                        joint=5)
-
-
 def half_cheetah_dithering(reward_shaping, joint, k=3):
     def idx_sign(act, idx):
         s = np.sign(act[idx])
@@ -87,6 +73,20 @@ def half_cheetah_dithering(reward_shaping, joint, k=3):
         s_tl,
         a_tl,
         s_active=False)
+
+
+mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
+                                                        joint=0)
+mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
+                                                        joint=1)
+mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
+                                                        joint=2)
+mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
+                                                        joint=3)
+mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
+                                                        joint=4)
+mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
+                                                        joint=5)
 
 
 def get_constraint(name):
