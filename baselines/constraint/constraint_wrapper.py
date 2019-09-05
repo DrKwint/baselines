@@ -6,6 +6,7 @@ import baselines.constraint
 import gym
 from baselines.constraint.bench.step_monitor import LogBuffer
 import collections
+from gym.spaces.box import Box
 
 
 class ConstraintEnv(gym.Wrapper):
@@ -16,6 +17,11 @@ class ConstraintEnv(gym.Wrapper):
                  log_dir=None,
                  action_history_size=10):
         gym.Wrapper.__init__(self, env)
+        if augmentation_type == 'constraint_state_concat' and isinstance(env.observation_space, Box):
+            constraint_shape_len = sum([c.num_states for c in constraints])
+            new_shape = list(env.observation_space.shape)
+            new_shape[-1] = new_shape[-1] + constraint_shape_len
+            self.observation_space = Box(-np.inf, np.inf, tuple(new_shape), env.observation_space.dtype)
         self.constraints = constraints
         self.augmentation_type = augmentation_type
         self.prev_obs = self.env.reset()
@@ -44,15 +50,15 @@ class ConstraintEnv(gym.Wrapper):
         ob = self.env.reset(**kwargs)
         self.prev_obs = ob
         if self.augmentation_type == 'constraint_state_concat':
-            ob = np.concatenate(
-                [ob] + np.array([c.state_id() for c in self.constraints]))
+            cs = [np.zeros(c.num_states) for c in self.constraints]
+            for i, c in enumerate(self.constraints):
+                cs[i][c.state_id()] = 1
+            ob = np.concatenate([ob] + cs)
         elif self.augmentation_type == 'constraint_state_product':
             ob = (ob, [c.state_id() for c in self.constraints])
         elif self.augmentation_type == 'action_history_product':
             ob = np.array([ob, np.array(self.action_history)])
-        else:
-            print(self.augmentation_type)
-            raise Exception()
+
         return ob
 
     def step(self, action):
@@ -67,8 +73,10 @@ class ConstraintEnv(gym.Wrapper):
                 self.rew_mod_log_dict[c].log(rew_mod)
 
         if self.augmentation_type == 'constraint_state_concat':
-            ob = np.concatenate(
-                [ob] + np.array([c.state_id() for c in self.constraints]))
+            cs = [np.zeros(c.num_states) for c in self.constraints]
+            for i, c in enumerate(self.constraints):
+                cs[i][c.state_id()] = 1
+            ob = np.concatenate([ob] + cs)
         elif self.augmentation_type == 'constraint_state_product':
             ob = (ob, np.array([c.state_id() for c in self.constraints]))
         elif self.augmentation_type == 'action_history_product':
