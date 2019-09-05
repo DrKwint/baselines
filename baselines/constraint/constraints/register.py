@@ -14,6 +14,9 @@ def register(name):
 
     return _thunk
 
+@register('empty')
+def empty(_):
+    return Constraint('empty', '', 0, s_active=False, a_active=False)
 
 @register('1d_dithering')
 def one_d_dithering(reward_shaping, k=2):
@@ -66,13 +69,26 @@ def half_cheetah_dithering(reward_shaping, joint, k=3):
     a_tl = lambda a: idx_sign(a, joint)
 
     return CountingPotentialConstraint(
-        'half_cheetah_actuation_{}'.format(joint),
+        'half_cheetah_dithering_{}'.format(joint),
         half_cheetah_dithering_k(k),
         reward_shaping,
         0.99,
         s_tl,
         a_tl,
         s_active=False)
+
+mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
+                                                        joint=0)
+mapping['half_cheetah_dithering_1'] = functools.partial(half_cheetah_dithering,
+                                                        joint=1)
+mapping['half_cheetah_dithering_2'] = functools.partial(half_cheetah_dithering,
+                                                        joint=2)
+mapping['half_cheetah_dithering_3'] = functools.partial(half_cheetah_dithering,
+                                                        joint=3)
+mapping['half_cheetah_dithering_4'] = functools.partial(half_cheetah_dithering,
+                                                        joint=4)
+mapping['half_cheetah_dithering_5'] = functools.partial(half_cheetah_dithering,
+                                                        joint=5)
 
 
 mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
