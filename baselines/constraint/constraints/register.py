@@ -105,7 +105,6 @@ mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
 mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
                                                         joint=5)
 
-
 def get_constraint(name):
     if callable(name):
         return name
