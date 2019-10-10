@@ -1,0 +1,16 @@
+# -*- mode: gitignore; -*-
+.*
+!.gitignore
+!.gitmodules
+!.gitkeep
+
+dfa-compiler
+
+# autosave files
+*~
+\#*\#
+
+# Common Lisp Ignores
+*.FASL
+*.fasl
+*.lisp-temp
