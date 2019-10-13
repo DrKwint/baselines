@@ -1,7 +1,7 @@
 ;;;; dfa-compiler.asd
 
 (asdf:defsystem #:dfa-compiler
-  :description "Describe dfa-compiler here"
+  :description "RE to minimal DFA compiler"
   :author "Samuel W. Flint <swflint@flintfam.org>"
   :license  "Specify license here"
   :version "0.0.1"
