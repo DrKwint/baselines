@@ -14,7 +14,14 @@
 
 (defpackage #:dfa-compiler.representations.regexp
   (:use #:cl)
-  (:nicknames #:regexp))
+  (:nicknames #:regexp)
+  (:export #:<regexp>
+           #:<regexp-empty-string>
+           #:<regexp-symbol>
+           #:<regexp-alternation>
+           #:<regexp-maybe>
+           #:<regexp-zero-or-more>
+           #:regexp-value))
 
 (defpackage #:dfa-compiler.read-regexp
   (:use #:cl
