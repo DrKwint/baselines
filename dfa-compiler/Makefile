@@ -6,8 +6,14 @@ dfa-compiler: dfa-compiler.asd *.lisp
 	--eval '(asdf:make :dfa-compiler)' \
 	--eval '(quit)'
 
+devrun: dfa-compiler
+	./dfa-compiler --swank 3030
+
 dfa-compiler.tbz2: Makefile README.md dfa-compiler.asd *.lisp
 	tar cjf $@ $^
 
 clean:
 	$(RM) dfa-compiler dfa-compiler.tbz2
+
+devclean:
+	$(RM) *\~
