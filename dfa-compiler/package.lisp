@@ -1,9 +1,5 @@
 ;;;; package.lisp
 
-(defpackage #:dfa-compiler
-  (:use #:cl)
-  (:export #:compiler-temp-hello-world))
-
 (defpackage #:dfa-compiler.representations.dfa
   (:use #:cl)
   (:nicknames #:dfa))
@@ -41,3 +37,24 @@
   (:use #:cl
         #:dfa))
 
+(defpackage #:dfa-compiler
+  (:use #:cl)
+  (:import-from #:uiop
+                #:quit
+                #:argv0
+                #:command-line-arguments)
+  (:import-from #:unix-opts
+                #:define-opts
+                #:get-opts
+                #:option
+                #:missing-options
+                #:long
+                #:unknown-option
+                #:missing-arg
+                #:arg-parser-failed
+                #:missing-required-option)
+  (:import-from #:prepl
+                #:repl)
+  (:import-from #:swank
+                #:create-server)
+  (:export #:start-dfa-compiler))
