@@ -8,6 +8,7 @@
   :serial t
   :depends-on (:uiop)
   :components ((:file "package")
+               (:file "regexp")
                (:file "dfa-compiler"))
   :build-operation "program-op"
   :build-pathname "dfa-compiler"
