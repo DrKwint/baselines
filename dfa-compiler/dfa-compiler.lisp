@@ -2,8 +2,16 @@
 
 (in-package #:dfa-compiler)
 
+(defparameter +stages+ (list :re-to-nfa :nfa-to-dfa :minimize-dfa))
+
+(defparameter *default-stages*
+  (copy-list +stages+))
+
 (defun start-dfa-compiler ()
   (dfa-compiler (argv0) (command-line-arguments)))
+
+(defun parse-stages (string)
+  (list))
 
 (define-opts
   (:name :help
