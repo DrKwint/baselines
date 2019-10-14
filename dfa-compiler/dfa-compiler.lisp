@@ -20,16 +20,34 @@
    :long "help")
   (:name :repl
    :description "Open REPL with packages loaded."
+   :short #\r
    :long "repl")
   (:name :swank
    :description "Start swank on PORT."
    :long "swank"
    :arg-parser #'parse-integer
-   :meta-var "PORT"))
+   :meta-var "PORT")
+  (:name :input-file
+   :description "Input file name (regexp, in documented format)."
+   :long "input-file"
+   :short #\i
+   :arg-parser #'identity
+   :meta-var "INFILE")
+  (:name :output-file
+   :description "Output file name (DFA, minimized, documented format)."
+   :long "output-file"
+   :short #\o
+   :arg-parser #'identity
+   :meta-var "OUTFILE")
+  (:name :stages
+   :description "List of stages to run, comma separated."
+   :long "stages"
+   :arg-parser #'parse-stages
+   :meta-var "STAGES"))
 
 (defun dfa-compiler (program-name program-arguments)
   (multiple-value-bind (options free-arguments)
-      (handler-case (get-opts)
+      (handler-case (get-opts program-arguments)
         (unknown-option (condition)
           (format *error-output*
                   "~&ERROR: Unknown option \"~A\".~%"
