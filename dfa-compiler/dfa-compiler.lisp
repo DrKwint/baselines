@@ -53,5 +53,8 @@
       (create-server :dont-close t
                      :port (getf options :swank))
       (repl :nobanner t))
+    (when (getf options :help)
+      (opts:describe :usage-of program-name)
+      (quit 0 t))
     )
   (quit 0 t))
