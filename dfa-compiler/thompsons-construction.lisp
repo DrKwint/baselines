@@ -63,6 +63,35 @@
                   :to-node end-node
                   :regexp (regexp-value regexp))))
 
+(defmethod regexp-make-edges ((regexp <regexp-zero-or-more>) start-node end-node)
+  (let ((new-edges (list))
+        (new-nodes (list))
+        (inner-re (regexp-value regexp))
+        (i-begin-node (make-instance '<nfa-node>))
+        (i-end-node (make-instance '<nfa-node>)))
+    (pushnew i-begin-node new-nodes :test #'equal)
+    (pushnew i-end-node new-nodes :test #'equal)
+    (pushnew (make-instance '<nfa-epsilon-edge> :from-node start-node :to-node end-node)
+             new-edges :test #'equal)
+    (pushnew (make-instance '<nfa-epsilon-edge>
+                            :from-node i-end-node
+                            :to-node i-begin-node)
+             new-edges :test #'equal)
+    (pushnew (make-instance '<nfa-epsilon-edge>
+                            :from-node start-node
+                            :to-node i-begin-node)
+             new-edges :test #'equal)
+    (pushnew (make-instance '<nfa-epsilon-edge>
+                            :from-node i-end-node
+                            :to-node end-node)
+             new-edges :test #'equal)
+    (pushnew (make-instance '<nfa-re-edge>
+                            :from-node i-begin-node
+                            :to-node i-end-node
+                            :regexp inner-re)
+             new-edges :test #'equal)
+    (values new-edges new-nodes)))
+
 (defun nfa-conversion (regexp)
   (let ((regexp-nfa (change-class (make-re-nfa regexp) '<tnfa>)))
     (with-slots (re-edge-count edges nodes) regexp-nfa
