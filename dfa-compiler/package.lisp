@@ -10,6 +10,7 @@
   (:export #:<regexp>
            #:<regexp-empty-string>
            #:<regexp-symbol>
+           #:<regexp-concat>
            #:<regexp-alternation>
            #:<regexp-maybe>
            #:<regexp-zero-or-more>
