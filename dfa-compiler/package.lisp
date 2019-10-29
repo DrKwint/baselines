@@ -22,10 +22,17 @@
   (:nicknames #:nfa)
   (:export #:<nfa-node>
            #:<nfa-edge>
+           #:to-node
+           #:from-node
            #:<nfa-re-edge>
+           #:regexp
            #:<nfa-symbol-edge>
            #:<nfa-symbol-epsilon>
            #:<nfa>
+           #:start
+           #:accept
+           #:nodes
+           #:edges
            #:make-re-nfa))
 
 (defpackage #:dfa-compiler.read-regexp
