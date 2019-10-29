@@ -22,7 +22,7 @@
 (defclass <nfa-symbol-edge> (<nfa-edge>)
   ((symbol :initarg :symbol)))
 
-(defclass <nfa-symbol-epsilon> (<nfa-edge>) ())
+(defclass <nfa-epsilon-edge> (<nfa-edge>) ())
 
 (defclass <nfa> ()
   ((start :initform (make-instance '<nfa-node>)
