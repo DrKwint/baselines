@@ -53,6 +53,16 @@
                               :regexp regexp-new)
                new-edges :test #'equal))))
 
+(defmethod regexp-make-edges ((regexp <regexp-maybe>) start-node end-node)
+  (list
+   (make-instance '<nfa-epsilon-edge>
+                  :from-node start-node
+                  :to-node end-node)
+   (make-instance '<nfa-re-edge>
+                  :from-node start-node
+                  :to-node end-node
+                  :regexp (regexp-value regexp))))
+
 (defun nfa-conversion (regexp)
   (let ((regexp-nfa (change-class (make-re-nfa regexp) '<tnfa>)))
     (with-slots (re-edge-count edges nodes) regexp-nfa
