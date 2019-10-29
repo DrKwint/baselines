@@ -52,11 +52,11 @@
          (accept-node (make-instance '<nfa-node>))
          (edge (make-instance '<nfa-re-edge>
                               :from-node start-node
-                              :to-node start-node
+                              :to-node accept-node
                               :regexp regexp)))
     (make-instance '<nfa>
                    :start-node start-node
-                   :end-node end-node
+                   :end-node accept-node
                    :edges (list edge))))
 
 ;;; End dfa-compiler.representations.nfa
