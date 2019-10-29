@@ -4,10 +4,6 @@
   (:use #:cl)
   (:nicknames #:dfa))
 
-(defpackage #:dfa-compiler.representations.nfa
-  (:use #:cl)
-  (:nicknames #:nfa))
-
 (defpackage #:dfa-compiler.representations.regexp
   (:use #:cl)
   (:nicknames #:regexp)
@@ -18,6 +14,18 @@
            #:<regexp-maybe>
            #:<regexp-zero-or-more>
            #:regexp-value))
+
+(defpackage #:dfa-compiler.representations.nfa
+  (:use #:cl
+        #:regexp)
+  (:nicknames #:nfa)
+  (:export #:<nfa-node>
+           #:<nfa-edge>
+           #:<nfa-re-edge>
+           #:<nfa-symbol-edge>
+           #:<nfa-symbol-epsilon>
+           #:<nfa>
+           #:make-re-nfa))
 
 (defpackage #:dfa-compiler.read-regexp
   (:use #:cl
