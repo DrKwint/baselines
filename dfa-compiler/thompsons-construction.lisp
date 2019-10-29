@@ -52,10 +52,11 @@
           (with-slots (regexp from-node to-node) edge-process
             (multiple-value-bind (new-edges new-nodes) (regexp-make-edges regexp from-node to-node)
               (decf re-edge-count)
-              (incf re-edge-count (length new-edges))
               (delete edge-process edges :test #'equal)
               (dolist (new-edge new-edges)
-                (pushnew new-edge edges :test #'equal))
+                (pushnew new-edge edges :test #'equal)
+                (when (typep new-edge '<nfa-re-edge>)
+                  (incf re-edge-count)))
               (dolist (new-node new-nodes)
                 (pushnew new-node nodes :test #'equal)))))))))
 
