@@ -27,7 +27,7 @@
            #:<nfa-re-edge>
            #:regexp
            #:<nfa-symbol-edge>
-           #:<nfa-symbol-epsilon>
+           #:<nfa-epsilon-edge>
            #:<nfa>
            #:start
            #:accept
