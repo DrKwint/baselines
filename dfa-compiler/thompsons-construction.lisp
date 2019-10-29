@@ -44,6 +44,15 @@
     (setf (slot-value last-edge 'to-node) end-node)
     (values new-edges new-nodes)))
 
+(defmethod regexp-make-edges ((regexp <regexp-alternation>) start-node end-node)
+  (let ((new-edges (list)))
+    (dolist (regexp-new (regexp-value regexp) new-edges)
+      (pushnew (make-instance '<nfa-re-edge>
+                              :from-node start-node
+                              :to-node end-node
+                              :regexp regexp-new)
+               new-edges :test #'equal))))
+
 (defun nfa-conversion (regexp)
   (let ((regexp-nfa (change-class (make-re-nfa regexp) '<tnfa>)))
     (with-slots (re-edge-count edges nodes) regexp-nfa
