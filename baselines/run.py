@@ -14,6 +14,7 @@ from baselines.common.tf_util import get_session
 from baselines.constraint import ConstraintStepMonitor, ConstraintEnv, get_constraint
 from baselines import logger
 from importlib import import_module
+import gym_sokoban
 
 try:
     from mpi4py import MPI
@@ -64,7 +65,11 @@ def train(args, extra_args):
 
     env = build_env(args)
     if args.save_video_interval != 0:
-        env = VecVideoRecorder(env, osp.join(logger.get_dir(), "videos"), record_video_trigger=lambda x: x % args.save_video_interval == 0, video_length=args.save_video_length)
+        env = VecVideoRecorder(
+            env,
+            osp.join(logger.get_dir(), "videos"),
+            record_video_trigger=lambda x: x % args.save_video_interval == 0,
+            video_length=args.save_video_length)
 
     if args.network:
         alg_kwargs['network'] = args.network
@@ -72,14 +77,13 @@ def train(args, extra_args):
         if alg_kwargs.get('network') is None:
             alg_kwargs['network'] = get_default_network(env_type)
 
-    print('Training {} on {}:{} with arguments \n{}'.format(args.alg, env_type, env_id, alg_kwargs))
+    print('Training {} on {}:{} with arguments \n{}'.format(
+        args.alg, env_type, env_id, alg_kwargs))
 
-    model = learn(
-        env=env,
-        seed=seed,
-        total_timesteps=total_timesteps,
-        **alg_kwargs
-    )
+    model = learn(env=env,
+                  seed=seed,
+                  total_timesteps=total_timesteps,
+                  **alg_kwargs)
 
     return model, env
 
@@ -93,38 +97,58 @@ def build_env(args):
 
     env_type, env_id = get_env_type(args)
 
-    if env_type in {'atari', 'retro'}:
+    if env_type in {'atari', 'retro', 'envs'}:
         if alg == 'deepq':
             if args.augmentation is not None: args.augmentation += '_product'
-            env = make_env(env_id, env_type, seed=seed, wrapper_kwargs={'frame_stack': True})
+            env = make_env(env_id,
+                           env_type,
+                           seed=seed,
+                           wrapper_kwargs={'frame_stack': True})
         elif alg == 'trpo_mpi':
-            if args.augmentation is not None: args.augmentation += '_not_implemented'
+            if args.augmentation is not None:
+                args.augmentation += '_not_implemented'
             env = make_env(env_id, env_type, seed=seed)
         else:
             if args.augmentation is not None: args.augmentation += '_concat'
             frame_stack_size = 4
-            env = make_vec_env(env_id, env_type, nenv, seed, gamestate=args.gamestate, reward_scale=args.reward_scale)
+            env = make_vec_env(env_id,
+                               env_type,
+                               nenv,
+                               seed,
+                               gamestate=args.gamestate,
+                               reward_scale=args.reward_scale)
             env = VecFrameStack(env, frame_stack_size)
 
     else:
         config = tf.ConfigProto(allow_soft_placement=True,
-                               intra_op_parallelism_threads=1,
-                               inter_op_parallelism_threads=1)
+                                intra_op_parallelism_threads=1,
+                                inter_op_parallelism_threads=1)
         config.gpu_options.allow_growth = True
         get_session(config=config)
 
         flatten_dict_observations = alg not in {'her'}
-        env = make_vec_env(env_id, env_type, args.num_env or 1, seed, reward_scale=args.reward_scale, flatten_dict_observations=flatten_dict_observations)
+        env = make_vec_env(env_id,
+                           env_type,
+                           args.num_env or 1,
+                           seed,
+                           reward_scale=args.reward_scale,
+                           flatten_dict_observations=flatten_dict_observations)
 
         if env_type == 'mujoco':
             env = VecNormalize(env, use_tf=True)
 
     if args.constraints is not None:
-        assert len(args.constraints) == len(args.reward_shaping) # should be parallel lists
+        assert len(args.constraints) == len(
+            args.reward_shaping)  # should be parallel lists
         constraints = [
-            get_constraint(s)(r) for (s, r) in zip(args.constraints, args.reward_shaping)
+            get_constraint(s)(r)
+            for (s, r) in zip(args.constraints, args.reward_shaping)
         ]
-        env = ConstraintStepMonitor(ConstraintEnv(env, constraints, augmentation_type=args.augmentation, log_dir=logger.get_dir()), logger.get_dir())
+        env = ConstraintStepMonitor(
+            ConstraintEnv(env,
+                          constraints,
+                          augmentation_type=args.augmentation,
+                          log_dir=logger.get_dir()), logger.get_dir())
 
     return env
 
@@ -151,7 +175,8 @@ def get_env_type(args):
                 break
         if ':' in env_id:
             env_type = re.sub(r':.*', '', env_id)
-        assert env_type is not None, 'env_id {} is not recognized in env types'.format(env_id, _game_envs.keys())
+        assert env_type is not None, 'env_id {} is not recognized in env types'.format(
+            env_id, _game_envs.keys())
 
     return env_type, env_id
 
@@ -161,6 +186,7 @@ def get_default_network(env_type):
         return 'cnn'
     else:
         return 'mlp'
+
 
 def get_alg_module(alg, submodule=None):
     submodule = submodule or alg
@@ -187,7 +213,6 @@ def get_learn_function_defaults(alg, env_type):
     return kwargs
 
 
-
 def parse_cmdline_kwargs(args):
     '''
     convert a list of '='-spaced command-line arguments to a dictionary, evaluating python objects when possible
@@ -200,7 +225,7 @@ def parse_cmdline_kwargs(args):
         except (NameError, SyntaxError):
             return v
 
-    return {k: parse(v) for k,v in parse_unknown_args(args).items()}
+    return {k: parse(v) for k, v in parse_unknown_args(args).items()}
 
 
 def configure_logger(log_path, **kwargs):
@@ -237,13 +262,14 @@ def main(args):
         logger.log("Running trained model")
         obs = env.reset()
 
-        state = model.initial_state if hasattr(model, 'initial_state') else None
-        dones = np.zeros((1,))
+        state = model.initial_state if hasattr(model,
+                                               'initial_state') else None
+        dones = np.zeros((1, ))
 
         episode_rew = 0
         while True:
             if state is not None:
-                actions, _, state, _ = model.step(obs,S=state, M=dones)
+                actions, _, state, _ = model.step(obs, S=state, M=dones)
             else:
                 actions, _, _, _ = model.step(obs)
 
@@ -259,6 +285,7 @@ def main(args):
     env.close()
 
     return model
+
 
 if __name__ == '__main__':
     main(sys.argv)
