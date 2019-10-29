@@ -25,22 +25,23 @@
 
 (defmethod regexp-make-edges ((regexp <regexp-concat>) start-node end-node)
   (let ((new-edges (list))
-        (new-nodes (list)))
-    (with-slots (sub-regexps) regexp
-      (let ((last-node)
-            (last-edge))
-        (dolist (regex sub-regexps)
-          (unless (null last-node)
-            (pushnew last-node new-edges :test #'equal))
-          (unless (null last-edge)
-            (pushnew last-edge new-edges :test #'equal))
-          (let ((new-node (make-instance '<nfa-node>)))
-            (setf last-edge (make-instance '<nfa-re-edge>
-                                           :from-node last-node
-                                           :to-node new-node
-                                           :regexp regex)
-                  last-node new-node)))
-        (setf (slot-value last-edge 'to-node) end-node)))
+        (new-nodes (list))
+        (sub-regexps (regexp-value regexp))
+        (last-node start-node)
+        (last-edge))
+    (dolist (regex sub-regexps)
+      (unless (or (null last-node) (equal last-node start-node))
+        (pushnew last-node new-nodes :test #'equal))
+      (unless (null last-edge)
+        (pushnew last-edge new-edges :test #'equal))
+      (let ((new-node (make-instance '<nfa-node>)))
+        (setf last-edge (make-instance '<nfa-re-edge>
+                                       :from-node last-node
+                                       :to-node new-node
+                                       :regexp regex)
+              last-node new-node)))
+    (pushnew last-edge new-edges :test #'equal)
+    (setf (slot-value last-edge 'to-node) end-node)
     (values new-edges new-nodes)))
 
 (defun nfa-conversion (regexp)
