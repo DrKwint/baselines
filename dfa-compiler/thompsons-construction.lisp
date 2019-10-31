@@ -9,7 +9,7 @@
 (defclass <gnfa> (<nfa>)
   ((re-edge-count :initform 0)))
 
-(defmethod change-class ((old <nfa>) (new <gnfa>) &key &allow-other-keys)
+(defmethod update-instance-for-different-class :after ((old <nfa>) (new <gnfa>) &key &allow-other-keys)
   (with-slots (re-edge-count edges) new
     (dolist (edge edges)
       (when (typep edge '<nfa-re-edge>)
