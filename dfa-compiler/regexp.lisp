@@ -48,8 +48,8 @@
 (defmethod print-object ((regexp <regexp-alternation>) stream)
   (format stream
           (if *regexp-as-latex*
-              "~{~A~^ \\cup ~}"
-              "~{~A~^ ∪ ~}")
+              "~{~A~^{\\cup}~}"
+              "~{~A~^∪~}")
           (regexp-value regexp)))
 
 (defclass <regexp-maybe> (<regexp>)
