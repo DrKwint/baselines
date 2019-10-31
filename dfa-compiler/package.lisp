@@ -43,7 +43,9 @@
 (defpackage #:dfa-compiler.conversions.regexp-nfa
   (:use #:cl
         #:regexp
-        #:nfa))
+        #:nfa)
+  (:nicknames #:regexp-nfa)
+  (:export #:nfa-conversion))
 
 (defpackage #:dfa-compiler.conversions.nfa-dfa
   (:use #:cl
