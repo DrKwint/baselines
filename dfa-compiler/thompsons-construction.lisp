@@ -6,10 +6,10 @@
 
 ;;; "dfa-compiler.conversions.regexp-nfa" goes here.
 
-(defclass <tnfa> (<nfa>)
+(defclass <gnfa> (<nfa>)
   ((re-edge-count :initform 0)))
 
-(defmethod change-class ((old <nfa>) (new <tnfa>) &key &allow-other-keys)
+(defmethod change-class ((old <nfa>) (new <gnfa>) &key &allow-other-keys)
   (with-slots (re-edge-count edges) new
     (dolist (edge edges)
       (when (typep edge '<nfa-re-edge>)
@@ -93,7 +93,7 @@
     (values new-edges new-nodes)))
 
 (defun nfa-conversion (regexp)
-  (let ((regexp-nfa (change-class (make-re-nfa regexp) '<tnfa>)))
+  (let ((regexp-nfa (change-class (make-re-nfa regexp) '<gnfa>)))
     (with-slots (re-edge-count edges nodes) regexp-nfa
       (do ()
           ((= re-edge-count 0) (change-class regexp-nfa '<nfa>))
