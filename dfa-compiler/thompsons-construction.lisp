@@ -18,10 +18,10 @@
 (defgeneric regexp-make-edges (regexp start-node end-node))
 
 (defmethod regexp-make-edges ((regexp <regexp-symbol>) start-node end-node)
-  (make-instance '<nfa-symbol-edge>
-                 :from-node start-node
-                 :to-node end-node
-                 :symbol (regexp-value regexp)))
+  (list (make-instance '<nfa-symbol-edge>
+                       :from-node start-node
+                       :to-node end-node
+                       :symbol (regexp-value regexp))))
 
 (defmethod regexp-make-edges ((regexp <regexp-concat>) start-node end-node)
   (let ((new-edges (list))
