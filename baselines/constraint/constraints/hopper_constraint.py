@@ -2,9 +2,10 @@ import joblib
 import json
 import numpy as np
 import string
+import functools
 
 from baselines.constraint.constraint import CountingPotentialConstraint
-from baselines.constraint.constraints.register import register
+from baselines.constraint.constraints.register import register, mapping
 
 
 def joinit(iterable, delimiter):
@@ -12,6 +13,38 @@ def joinit(iterable, delimiter):
     for x in it:
         yield delimiter
         yield x
+
+
+def mujoco_dithering(reward_shaping, joint, name, k=3):
+    def idx_sign(act, idx):
+        s = np.sign(act[idx])
+        if s > 0:
+            return '2'
+        else:
+            return '3'
+
+    dithering_k = lambda k: '(23){k}|(32){k}'.format(k=k)
+    s_tl = lambda o: 0
+    a_tl = lambda a: idx_sign(a, joint)
+
+    return CountingPotentialConstraint('{}_dithering_{}'.format(name, joint),
+                                       dithering_k(k),
+                                       reward_shaping,
+                                       0.99,
+                                       s_tl,
+                                       a_tl,
+                                       s_active=False)
+
+
+mapping['hopper_dithering_0'] = functools.partial(mujoco_dithering,
+                                                  joint=0,
+                                                  name='hopper')
+mapping['hopper_dithering_1'] = functools.partial(mujoco_dithering,
+                                                  joint=1,
+                                                  name='hopper')
+mapping['hopper_dithering_2'] = functools.partial(mujoco_dithering,
+                                                  joint=2,
+                                                  name='hopper')
 
 
 @register('hopper_learned')

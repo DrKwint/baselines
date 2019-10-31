@@ -15,6 +15,7 @@ from baselines.constraint import ConstraintStepMonitor, ConstraintEnv, get_const
 from baselines import logger
 from importlib import import_module
 import gym_sokoban
+import gym_2048
 
 try:
     from mpi4py import MPI
