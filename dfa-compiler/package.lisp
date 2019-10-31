@@ -7,7 +7,8 @@
 (defpackage #:dfa-compiler.representations.regexp
   (:use #:cl)
   (:nicknames #:regexp)
-  (:export #:<regexp>
+  (:export #:*regexp-as-latex*
+           #:<regexp>
            #:<regexp-empty-string>
            #:<regexp-symbol>
            #:<regexp-concat>
