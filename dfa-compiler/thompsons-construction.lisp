@@ -101,7 +101,7 @@
           (with-slots (regexp from-node to-node) edge-process
             (multiple-value-bind (new-edges new-nodes) (regexp-make-edges regexp from-node to-node)
               (decf re-edge-count)
-              (delete edge-process edges :test #'equal)
+              (setf edges (remove edge-process edges :test #'equal))
               (dolist (new-edge new-edges)
                 (pushnew new-edge edges :test #'equal)
                 (when (typep new-edge '<nfa-re-edge>)
