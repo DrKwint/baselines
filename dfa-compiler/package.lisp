@@ -22,6 +22,7 @@
         #:regexp)
   (:nicknames #:nfa)
   (:export #:<nfa-node>
+           #:edges-out
            #:<nfa-edge>
            #:to-node
            #:from-node

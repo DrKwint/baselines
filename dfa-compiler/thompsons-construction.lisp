@@ -99,6 +99,7 @@
           ((= re-edge-count 0) (change-class regexp-nfa '<nfa>))
         (let ((edge-process (find-if #'(lambda (e) (typep e '<nfa-re-edge>)) edges)))
           (with-slots (regexp from-node to-node) edge-process
+            (setf (slot-value from-node 'edges-out) (remove edge-process (slot-value from-node 'edges-out)))
             (multiple-value-bind (new-edges new-nodes) (regexp-make-edges regexp from-node to-node)
               (decf re-edge-count)
               (setf edges (remove edge-process edges :test #'equal))

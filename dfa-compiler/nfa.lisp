@@ -7,13 +7,18 @@
 ;;; "dfa-compiler.representations.nfa" goes here.
 
 (defclass <nfa-node> ()
-  ((label :initarg :label)))
+  ((label :initarg :label)
+   (edges-out :initform (list))))
 
 (defclass <nfa-edge> ()
   ((from-node :initarg :from-node
               :type <nfa-node>)
    (to-node :initarg :to-node
             :type <nfa-node>)))
+
+(defmethod initialize-instance :after ((edge <nfa-edge>) &key &allow-other-keys)
+  (with-slots (from-node) edge
+    (pushnew edge (slot-value from-node 'edges-out) :test #'equal)))
 
 (defclass <nfa-re-edge> (<nfa-edge>)
   ((regexp :initarg :regexp
