@@ -35,7 +35,8 @@
            #:accept
            #:nodes
            #:edges
-           #:make-re-nfa))
+           #:make-re-nfa
+           #:nfa-to-dot))
 
 (defpackage #:dfa-compiler.read-regexp
   (:use #:cl
