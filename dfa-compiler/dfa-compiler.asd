@@ -13,6 +13,7 @@
   :components ((:file "package")
                (:file "regexp")
                (:file "nfa")
+               (:file "dfa")
                (:file "thompsons-construction")
                (:file "dfa-compiler"))
   :build-operation "program-op"

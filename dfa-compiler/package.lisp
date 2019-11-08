@@ -1,9 +1,5 @@
 ;;;; package.lisp
 
-(defpackage #:dfa-compiler.representations.dfa
-  (:use #:cl)
-  (:nicknames #:dfa))
-
 (defpackage #:dfa-compiler.representations.regexp
   (:use #:cl)
   (:nicknames #:regexp)
@@ -37,6 +33,15 @@
            #:edges
            #:make-re-nfa
            #:nfa-to-dot))
+
+(defpackage #:dfa-compiler.representations.dfa
+  (:use #:cl
+        #:nfa)
+  (:nicknames #:dfa)
+  (:export #:<dfa-node>
+           #:<dfa-edge>
+           #:transitionable-symbols
+           #:<dfa>))
 
 (defpackage #:dfa-compiler.read-regexp
   (:use #:cl
