@@ -109,4 +109,18 @@
                        (slot-value edge 'regexp))))))))
     (format stream "}~%")))
 
+(defun epsilon-closure (start-node)
+  (let ((process-stack (list start-node))
+        (closure-set (list start-node)))
+    (do ()
+        ((null process-stack) closure-set)
+      (let ((node (first process-stack)))
+        (setf process-stack (rest process-stack))
+        (dolist (next-node (mapcar #'(lambda (e) (slot-value e 'to-node))
+                                   (remove-if-not #'(lambda (e) (typep e '<nfa-epsilon-edge>))
+                                                  (slot-value node 'edges-out))))
+          (unless (member next-node closure-set :test #'equal)
+            (push next-node process-stack)
+            (pushnew next-node closure-set)))))))
+
 ;;; End dfa-compiler.representations.nfa

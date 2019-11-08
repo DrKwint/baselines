@@ -32,7 +32,8 @@
            #:nodes
            #:edges
            #:make-re-nfa
-           #:nfa-to-dot))
+           #:nfa-to-dot
+           #:epsilon-closure))
 
 (defpackage #:dfa-compiler.representations.dfa
   (:use #:cl
@@ -57,7 +58,8 @@
 (defpackage #:dfa-compiler.conversions.nfa-dfa
   (:use #:cl
         #:nfa
-        #:dfa))
+        #:dfa)
+  (:nicknames #:nfa-dfa))
 
 (defpackage #:dfa-compiler.dfa-minimizer
   (:use #:cl
