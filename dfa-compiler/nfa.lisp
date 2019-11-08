@@ -64,4 +64,49 @@
                    :end-node accept-node
                    :edges (list edge))))
 
+(defun label-nodes (nfa)
+  (let ((q (list (slot-value nfa 'start)))
+        (counter 0))
+    (setf (slot-value (slot-value nfa 'accept) 'label) 'accept)
+    (do () ((null q))
+      (let ((current (car (last q))))
+        (setf q (butlast q))
+        (with-slots (label edges-out) current
+          (setf label (incf counter))
+          (dolist (edge edges-out)
+            (with-slots (to-node) edge
+              (unless (slot-boundp to-node 'label)
+                (pushnew to-node q :test #'equal)))))))))
+
+(defun nfa-to-dot (filename nfa)
+  (with-open-file (stream filename :direction :output
+                                   :if-exists :supersede
+                                   :if-does-not-exist :create)
+    (format stream "digraph {~%")
+    (format stream "~&~4Trankdir=LR;~%")
+    (label-nodes nfa)
+    (with-slots (nodes edges start accept) nfa
+      (dolist (node nodes)
+        (format stream "~&~4T~a;~%"
+                (slot-value node 'label)))
+      (dolist (edge edges)
+        (with-slots ((from from-node) (to to-node)) edge
+          (typecase edge
+            (<nfa-symbol-edge>
+             (format stream "~&~4T~a -> ~a [label = \"~a\"];~%"
+                     (slot-value from 'label)
+                     (slot-value to 'label)
+                     (slot-value edge 'symbol)))
+            (<nfa-epsilon-edge>
+             (format stream "~&~4T~a -> ~a [label = \"ε\"];~%"
+                     (slot-value from 'label)
+                     (slot-value to 'label)))
+            (<nfa-re-edge>
+             (let ((*regexp-as-latex* nil))
+               (format stream "~&~4T~a -> ~a [label = \"~a\"];~%"
+                       (slot-value from 'label)
+                       (slot-value to 'label)
+                       (slot-value edge 'regexp))))))))
+    (format stream "}~%")))
+
 ;;; End dfa-compiler.representations.nfa
