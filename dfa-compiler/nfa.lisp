@@ -8,7 +8,7 @@
 
 (defclass <nfa-node> ()
   ((label :initarg :label)
-   (edges-out :initform (list))))
+   (edges-out :initform ())))
 
 (defclass <nfa-edge> ()
   ((from-node :initarg :from-node
@@ -36,10 +36,10 @@
    (accept :initform (make-instance '<nfa-node>)
            :initarg :end-node
            :type <nfa-node>)
-   (nodes :initform '(list)
+   (nodes :initform ()
           :type list)
    (edges :initarg :edges
-          :initform (list)
+          :initform ()
           :type list)))
 
 (defmethod initialize-instance :after ((nfa <nfa>) &rest initargs &key &allow-other-keys)
