@@ -6,6 +6,7 @@ import gym
 from collections import defaultdict
 import tensorflow as tf
 import numpy as np
+import shutil
 
 from baselines.common.vec_env import VecFrameStack, VecNormalize, VecEnv
 from baselines.common.vec_env.vec_video_recorder import VecVideoRecorder
@@ -15,7 +16,6 @@ from baselines.constraint import ConstraintStepMonitor, ConstraintEnv, get_const
 from baselines import logger
 from importlib import import_module
 import gym_sokoban
-import gym_2048
 
 try:
     from mpi4py import MPI
@@ -284,6 +284,8 @@ def main(args):
                     episode_rew[i] = 0
 
     env.close()
+
+    copyfile(osp.join(args.log_path, 'log.txt'), osp.join(args.log_path, 'final_log.txt'))
 
     return model
 
