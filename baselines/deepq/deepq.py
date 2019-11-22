@@ -22,16 +22,17 @@ from baselines.deepq.models import build_q_func
 
 
 class ActWrapper(object):
-    def __init__(self, act, act_params):
+    def __init__(self, act, act_params, q_fn):
         self._act = act
         self._act_params = act_params
         self.initial_state = None
+        self._q_fn = q_fn
 
     @staticmethod
     def load_act(path):
         with open(path, "rb") as f:
             model_data, act_params = cloudpickle.load(f)
-        act = deepq.build_act(**act_params)
+        act, q_fn = deepq.build_act(**act_params)
         sess = tf.Session()
         sess.__enter__()
         with tempfile.TemporaryDirectory() as td:
@@ -42,10 +43,13 @@ class ActWrapper(object):
             zipfile.ZipFile(arc_path, 'r', zipfile.ZIP_DEFLATED).extractall(td)
             load_variables(os.path.join(td, "model"))
 
-        return ActWrapper(act, act_params)
+        return ActWrapper(act, act_params, q_fn)
 
     def __call__(self, *args, **kwargs):
         return self._act(*args, **kwargs)
+
+    def q(self, observation):
+        return self._q_fn(observation)
 
     def step(self, observation, **kwargs):
         # DQN doesn't use RNNs so we ignore states and masks
@@ -74,7 +78,8 @@ class ActWrapper(object):
             cloudpickle.dump((model_data, self._act_params), f)
 
     def save(self, path):
-        save_variables(path)
+        # save_variables(path)
+        self.save_act(path)
 
 
 def load_act(path):
@@ -228,7 +233,7 @@ def learn(env,
         'num_actions': env.action_space.n,
     }
 
-    act = ActWrapper(act, act_params)
+    act = ActWrapper(act, act_params, None)
 
     # Create the replay buffer
     if prioritized_replay:

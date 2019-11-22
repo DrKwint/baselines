@@ -26,13 +26,6 @@ class Constraint(DFA):
         self.s_active = s_active
         self.a_active = a_active
 
-        self.embedding_size = int(np.log2(self.num_states))
-        if self.embedding_size < 1:
-            self.embedding_size = 1
-        self.state_embeddings = tf.get_variable(
-            "{}_state_embeddings".format(self.name),
-            [self.num_states, self.embedding_size])
-
     def step(self, obs, action, done):
         is_viol = False
         if self.s_active and self.a_active:
@@ -43,9 +36,6 @@ class Constraint(DFA):
             is_viol = is_viol | super().step(self.a_tl(action))
         rew_mod = self.violation_reward if is_viol else 0.
         return is_viol, rew_mod
-
-    def embedded_state(self, state):
-        return tf.nn.embedding_lookup(self.state_embeddings, state)
 
 
 class CountingPotentialConstraint(Constraint):
