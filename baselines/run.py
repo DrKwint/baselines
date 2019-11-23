@@ -285,7 +285,7 @@ def main(args):
 
     env.close()
 
-    shutil.copyfile(osp.join(logger.get_dir(), 'log.txt'), osp.join(args.log_path, 'final_log.txt'))
+    shutil.copyfile(osp.join(logger.get_dir(), 'log.txt'), osp.join(logger.get_dir(), 'final_log.txt'))
 
     return model
 
