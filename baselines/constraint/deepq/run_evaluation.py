@@ -15,7 +15,6 @@ from baselines.constraint import ConstraintStepMonitor, ConstraintEnv, get_const
 from baselines import logger
 from importlib import import_module
 import gym_sokoban
-import gym_2048
 
 try:
     from mpi4py import MPI
@@ -226,7 +225,8 @@ def main(args):
     # if we have already collected trajectories
     if 'experiences' in args.__dict__:
         logger.log("Loading collected experiences")
-        states = np.load(args.experiences)
+        # TODO: fix by adding loading of constraint state and finding the right files
+        states = np.load(args.experience_dir)
     else:
         states = np.zeros((int(args.num_timesteps),) + env.observation_space.shape)
         constraint_states = []
@@ -246,22 +246,32 @@ def main(args):
                 actions, _, _, _ = model.step(obs)
 
             obs, rew, done, _ = env.step(actions)
-            states[i] = obs[0]
-            constraint_states.append(obs[1])
+            if type(obs) is tuple: # with augmentation
+                states[i] = obs[0]
+                constraint_states.append(obs[1])
+            else: # without aug
+                states[i] = obs
             episode_rew += rew
             done_any = done.any() if isinstance(done, np.ndarray) else done
             if done_any:
                 for i in np.nonzero(done)[0]:
                     print('episode_rew={}'.format(episode_rew[i]))
                     episode_rew[i] = 0
+                env.reset()
 
-        np.save(osp.join(args.log_path, 'states'), states)
+        np.save(osp.join(logger.get_dir(), 'states'), states)
+        if len(constraint_states) > 0:
+            np.save(osp.join(logger.get_dir(), 'constraint_states'), np.array(constraint_states))
         env.close()
 
     # calculate q values
     for i, s in enumerate(states):
-        q_vals[i] = model.q([(s, constraint_states[i])])
-    np.save(osp.join(args.log_path, 'q_vals'), q_vals)
+        if len(constraint_states) > 0: # with augmentation
+            q_input = [(s, constraint_states[i])]
+        else:
+            q_input = s
+        q_vals[i] = model.q(q_input)
+    np.save(osp.join(logger.get_dir(), 'q_vals'), q_vals)
 
 
 if __name__ == '__main__':

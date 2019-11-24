@@ -258,6 +258,10 @@ def main(args):
     if args.save_path is not None and rank == 0:
         save_path = osp.expanduser(args.save_path)
         model.save(save_path)
+    else:
+        save_path = osp.expanduser(osp.join(logger.get_dir(), 'model'))
+        model.save(save_path)
+        
 
     if args.play and False:
         logger.log("Running trained model")
