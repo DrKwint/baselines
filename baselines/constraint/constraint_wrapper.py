@@ -32,6 +32,8 @@ class ConstraintEnv(gym.Wrapper):
             self.log_dir = log_dir
             self.viol_log_dict = dict([(c, LogBuffer(1024, (), dtype=np.bool))
                                        for c in constraints])
+            self.state_log_dict = dict([(c, LogBuffer(1024, (), dtype=np.int32))
+                                       for c in constraints])
             self.rew_mod_log_dict = dict([
                 (c, LogBuffer(1024, (), dtype=np.float32)) for c in constraints
             ])
@@ -55,6 +57,10 @@ class ConstraintEnv(gym.Wrapper):
             for (c, log) in self.viol_log_dict.items()
         ]
         [
+            log.save(os.path.join(self.log_dir, c.name + '_state'))
+            for (c, log) in self.state_log_dict.items()
+        ]
+        [
             log.save(os.path.join(self.log_dir, c.name + '_rew_mod'))
             for (c, log) in self.rew_mod_log_dict.items()
         ]
@@ -72,6 +78,7 @@ class ConstraintEnv(gym.Wrapper):
             rew += rew_mod
             if self.viol_log_dict is not None:
                 self.viol_log_dict[c].log(is_vio)
+                self.state_log_dict[c].log(c.state_id())
                 self.rew_mod_log_dict[c].log(rew_mod)
 
         ob = self.augment_obs(ob)

@@ -6,16 +6,14 @@ import tensorflow as tf
 
 from baselines.constraint.dfa import DFA
 
-id_fn = lambda x: x
-
 
 class Constraint(DFA):
     def __init__(self,
                  name,
                  reg_ex,
                  violation_reward,
-                 s_tl=id_fn,
-                 a_tl=id_fn,
+                 s_tl=id,
+                 a_tl=id,
                  s_active=True,
                  a_active=True):
         super(Constraint, self).__init__(reg_ex)
@@ -37,15 +35,14 @@ class Constraint(DFA):
         rew_mod = self.violation_reward if is_viol else 0.
         return is_viol, rew_mod
 
-
 class CountingPotentialConstraint(Constraint):
     def __init__(self,
                  name,
                  reg_ex,
                  violation_reward,
                  gamma,
-                 s_tl=id_fn,
-                 a_tl=id_fn,
+                 s_tl=id,
+                 a_tl=id,
                  s_active=True,
                  a_active=True):
         super(CountingPotentialConstraint,
