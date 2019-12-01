@@ -13,7 +13,7 @@ The functions in this file can are used to create the following functions:
     stochastic: bool
         if set to False all the actions are always deterministic (default False)
     update_eps_ph: float
-        update epsilon a new value, if negative not update happens
+        update epsilon a new value, if negative no update happens
         (default: no update)
 
     Returns
@@ -199,7 +199,11 @@ def build_act(make_obs_ph, q_func, num_actions, scope="deepq", reuse=None):
                          updates=[update_eps_expr])
         def act(ob, stochastic=True, update_eps=-1):
             return _act(ob, stochastic, update_eps)
-        return act
+        _q = U.function(inputs=[observations_ph], outputs=q_values)
+        def q_fn(ob):
+            return _q(ob)
+
+        return act, q_fn
 
 
 def build_act_with_param_noise(make_obs_ph, q_func, num_actions, scope="deepq", reuse=None, param_noise_filter_func=None):
@@ -376,7 +380,7 @@ def build_train(make_obs_ph, q_func, num_actions, optimizer, grad_norm_clipping=
         act_f = build_act_with_param_noise(make_obs_ph, q_func, num_actions, scope=scope, reuse=reuse,
             param_noise_filter_func=param_noise_filter_func)
     else:
-        act_f = build_act(make_obs_ph, q_func, num_actions, scope=scope, reuse=reuse)
+        act_f, _ = build_act(make_obs_ph, q_func, num_actions, scope=scope, reuse=reuse)
 
     with tf.variable_scope(scope, reuse=reuse):
         # set up placeholders
@@ -449,4 +453,4 @@ def build_train(make_obs_ph, q_func, num_actions, optimizer, grad_norm_clipping=
 
         q_values = U.function([obs_t_input], q_t)
 
-        return act_f, train, update_target, {'q_values': q_values}
+        return act_f, train, update_target, {'q_fn': q_values}

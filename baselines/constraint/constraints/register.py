@@ -14,9 +14,11 @@ def register(name):
 
     return _thunk
 
+
 @register('empty')
 def empty(_):
     return Constraint('empty', '', 0, s_active=False, a_active=False)
+
 
 @register('1d_dithering')
 def one_d_dithering(reward_shaping, k=2):
@@ -56,6 +58,15 @@ def one_d_actuation_dense(reward_shaping):
                                        s_active=False)
 
 
+@register('sokoban_idempotent')
+def sokoban_idempotent(reward_shaping):
+    SOKOBAN_REGEX = '0|56|65|78|87|5678|5687|5768|5786|5867|5876|6578|6587|6758|6785|6857|6875|7568|7586|7658|7685|7856|7865|8567|8576|8657|8675|8756|8765'
+    return Constraint('sokoban_idempotent',
+                      SOKOBAN_REGEX,
+                      reward_shaping,
+                      s_active=False)
+
+
 # see below for registration
 def half_cheetah_dithering(reward_shaping, joint, k=3):
     def idx_sign(act, idx):
@@ -78,6 +89,7 @@ def half_cheetah_dithering(reward_shaping, joint, k=3):
         a_tl,
         s_active=False)
 
+
 mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
                                                         joint=0)
 mapping['half_cheetah_dithering_1'] = functools.partial(half_cheetah_dithering,
@@ -91,19 +103,6 @@ mapping['half_cheetah_dithering_4'] = functools.partial(half_cheetah_dithering,
 mapping['half_cheetah_dithering_5'] = functools.partial(half_cheetah_dithering,
                                                         joint=5)
 
-
-mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
-                                                        joint=0)
-mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
-                                                        joint=1)
-mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
-                                                        joint=2)
-mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
-                                                        joint=3)
-mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
-                                                        joint=4)
-mapping['half_cheetah_dithering_0'] = functools.partial(half_cheetah_dithering,
-                                                        joint=5)
 
 def get_constraint(name):
     if callable(name):

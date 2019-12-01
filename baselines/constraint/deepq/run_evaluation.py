@@ -6,7 +6,6 @@ import gym
 from collections import defaultdict
 import tensorflow as tf
 import numpy as np
-import shutil
 
 from baselines.common.vec_env import VecFrameStack, VecNormalize, VecEnv
 from baselines.common.vec_env.vec_video_recorder import VecVideoRecorder
@@ -51,42 +50,6 @@ _game_envs['retro'] = {
     'FinalFight-Snes',
     'SpaceInvaders-Snes',
 }
-
-
-def train(args, extra_args):
-    env_type, env_id = get_env_type(args)
-    print('env_type: {}'.format(env_type))
-
-    total_timesteps = int(args.num_timesteps)
-    seed = args.seed
-
-    learn = get_learn_function(args.alg)
-    alg_kwargs = get_learn_function_defaults(args.alg, env_type)
-    alg_kwargs.update(extra_args)
-
-    env = build_env(args)
-    if args.save_video_interval != 0:
-        env = VecVideoRecorder(
-            env,
-            osp.join(logger.get_dir(), "videos"),
-            record_video_trigger=lambda x: x % args.save_video_interval == 0,
-            video_length=args.save_video_length)
-
-    if args.network:
-        alg_kwargs['network'] = args.network
-    else:
-        if alg_kwargs.get('network') is None:
-            alg_kwargs['network'] = get_default_network(env_type)
-
-    print('Training {} on {}:{} with arguments \n{}'.format(
-        args.alg, env_type, env_id, alg_kwargs))
-
-    model = learn(env=env,
-                  seed=seed,
-                  total_timesteps=total_timesteps,
-                  **alg_kwargs)
-
-    return model, env
 
 
 def build_env(args):
@@ -253,45 +216,62 @@ def main(args):
     import json
     with open(osp.join(logger.get_dir(), 'args.json'), 'w') as arg_record_file:
         json.dump(args.__dict__, arg_record_file)
-    model, env = train(args, extra_args)
+    env = build_env(args)
 
-    if args.save_path is not None and rank == 0:
-        save_path = osp.expanduser(args.save_path)
-        model.save(save_path)
+    from baselines.deepq.deepq import ActWrapper
+    model = ActWrapper.load_act(args.save_path)
+    q_vals = np.zeros((int(args.num_timesteps), env.action_space.n))
+
+    # if we have already collected trajectories
+    if 'experiences' in args.__dict__:
+        logger.log("Loading collected experiences")
+        # TODO: fix by adding loading of constraint state and finding the right files
+        states = np.load(args.experience_dir)
     else:
-        save_path = osp.expanduser(osp.join(logger.get_dir(), 'model'))
-        model.save(save_path)
-        
+        states = np.zeros((int(args.num_timesteps),) + env.observation_space.shape)
+        constraint_states = []
 
-    if args.play and False:
-        logger.log("Running trained model")
+        logger.log("Running loaded model")
         obs = env.reset()
 
         state = model.initial_state if hasattr(model,
-                                               'initial_state') else None
+                                                'initial_state') else None
         dones = np.zeros((1, ))
 
         episode_rew = np.zeros(env.num_envs) if isinstance(env, VecEnv) else np.zeros(1)
-        while True:
+        for i in range(int(args.num_timesteps)):
             if state is not None:
                 actions, _, state, _ = model.step(obs, S=state, M=dones)
             else:
                 actions, _, _, _ = model.step(obs)
 
             obs, rew, done, _ = env.step(actions)
+            if type(obs) is tuple: # with augmentation
+                states[i] = obs[0]
+                constraint_states.append(obs[1])
+            else: # without aug
+                states[i] = obs
             episode_rew += rew
-            env.render()
             done_any = done.any() if isinstance(done, np.ndarray) else done
             if done_any:
                 for i in np.nonzero(done)[0]:
                     print('episode_rew={}'.format(episode_rew[i]))
                     episode_rew[i] = 0
+                env.reset()
 
-    env.close()
+        np.save(osp.join(logger.get_dir(), 'states'), states)
+        if len(constraint_states) > 0:
+            np.save(osp.join(logger.get_dir(), 'constraint_states'), np.array(constraint_states))
+        env.close()
 
-    shutil.copyfile(osp.join(logger.get_dir(), 'log.txt'), osp.join(logger.get_dir(), 'final_log.txt'))
-
-    return model
+    # calculate q values
+    for i, s in enumerate(states):
+        if len(constraint_states) > 0: # with augmentation
+            q_input = [(s, constraint_states[i])]
+        else:
+            q_input = s
+        q_vals[i] = model.q(q_input)
+    np.save(osp.join(logger.get_dir(), 'q_vals'), q_vals)
 
 
 if __name__ == '__main__':

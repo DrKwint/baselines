@@ -59,15 +59,16 @@ class ConstraintStateAugmentedInput(ObservationInput):
     def make_feed_dict(self, data):
         """
         Assumes data is an interable whose second entry is an iterable of
-        integer constraint states.
+        constraint states.
         """
+        if type(data) is not np.ndarray:
+            data = np.asarray(data)
         obs = np.array(list(data[:, 0]))
         # list of lists with shape [batch_size, # constraints]
-        constraint_states = list(data[:, 1])
+        constraint_states = data[:, 1]
         batch_size = obs.shape[0]
 
         feed_dict = super().make_feed_dict(obs)
-
         c_one_hots = [
             np.zeros([batch_size, c.num_states]) for c in self.constraints
         ]
@@ -75,6 +76,7 @@ class ConstraintStateAugmentedInput(ObservationInput):
             for n in range(len(constraint_states)):
                 c_one_hots[i][n, constraint_states[n][i]] = 1
             feed_dict[ph] = c_one_hots[i]
+
         return feed_dict
 
     def batch_size(self):

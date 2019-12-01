@@ -6,16 +6,14 @@ import tensorflow as tf
 
 from baselines.constraint.dfa import DFA
 
-id_fn = lambda x: x
-
 
 class Constraint(DFA):
     def __init__(self,
                  name,
                  reg_ex,
                  violation_reward,
-                 s_tl=id_fn,
-                 a_tl=id_fn,
+                 s_tl=id,
+                 a_tl=id,
                  s_active=True,
                  a_active=True):
         super(Constraint, self).__init__(reg_ex)
@@ -25,13 +23,6 @@ class Constraint(DFA):
         self.a_tl = a_tl
         self.s_active = s_active
         self.a_active = a_active
-
-        self.embedding_size = int(np.log2(self.num_states))
-        if self.embedding_size < 1:
-            self.embedding_size = 1
-        self.state_embeddings = tf.get_variable(
-            "{}_state_embeddings".format(self.name),
-            [self.num_states, self.embedding_size])
 
     def step(self, obs, action, done):
         is_viol = False
@@ -44,18 +35,14 @@ class Constraint(DFA):
         rew_mod = self.violation_reward if is_viol else 0.
         return is_viol, rew_mod
 
-    def embedded_state(self, state):
-        return tf.nn.embedding_lookup(self.state_embeddings, state)
-
-
 class CountingPotentialConstraint(Constraint):
     def __init__(self,
                  name,
                  reg_ex,
                  violation_reward,
                  gamma,
-                 s_tl=id_fn,
-                 a_tl=id_fn,
+                 s_tl=id,
+                 a_tl=id,
                  s_active=True,
                  a_active=True):
         super(CountingPotentialConstraint,
