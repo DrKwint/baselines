@@ -1,5 +1,4 @@
-from baselines.constraint.constraint import Constraint, CountingPotentialConstraint
-from baselines.constraint.constraints.reacher_dynamic_constraint import reacher_dynamic_constraint
+from baselines.constraint.constraint import Constraint, SoftDenseConstraint
 import itertools
 import functools
 import numpy as np
@@ -22,11 +21,11 @@ def empty(_):
 
 @register('1d_dithering')
 def one_d_dithering(reward_shaping, k=2):
-    DITHERING1D_REGEX = lambda k: '(23){k}|(32){k}'.format(k=k)
+    with open("./baselines/constraint/constraints/1d_dithering.lisp") as dfa_file:
+        dfa_string = dfa_file.read()
     return Constraint('1d_dithering',
-                      DITHERING1D_REGEX(k),
-                      reward_shaping,
-                      s_active=False)
+                      dfa_string,
+                      reward_shaping, lambda obs, action, done: action)
 
 
 @register('1d_dithering_dense')

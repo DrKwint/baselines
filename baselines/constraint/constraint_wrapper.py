@@ -78,7 +78,7 @@ class ConstraintEnv(gym.Wrapper):
             rew += rew_mod
             if self.viol_log_dict is not None:
                 self.viol_log_dict[c].log(is_vio)
-                self.state_log_dict[c].log(c.state_id())
+                self.state_log_dict[c].log(c.current_state)
                 self.rew_mod_log_dict[c].log(rew_mod)
 
         ob = self.augment_obs(ob)
