@@ -1,78 +1,89 @@
-from __future__ import print_function
-
-import os
-import string
-import tempfile
-
-import pygraphviz
-from networkx.drawing import nx_agraph
-
-JAR_DIR = './baselines/constraint'
+import sexpdata
 
 
-def regex2dfa(reg_ex, letter='q'):
-    transfer_file = tempfile.NamedTemporaryFile(mode='w+')
-    command = 'java -jar {}/regex2dfa.jar "{}" {}'.format(
-        JAR_DIR, reg_ex, transfer_file.name)
-    os.system(command)
+class DFA(object):
+    def __init__(self, name, alphabet, states, start, accepts,
+                 transition_list):
+        self._name = name
+        self._alphabet = alphabet
+        self._states = states
+        self._start = start
+        self._accepts = accepts
+        self._current_state = start
+        self.__make_transition_structure(transition_list)
+        self.__make_violations_structure()
 
-    with open(transfer_file.name) as fname:
-        dot = fname.read()
-        print(dot, file=open('{}.dot'.format(transfer_file.name), 'w'))
-    return nx_agraph.from_agraph(pygraphviz.AGraph(dot))
+    def __make_transition_structure(self, transition_list):
+        self._transitions = {}
+        for state in self._states:
+            self._transitions[state] = {}
+        for transition in transition_list:
+            start_state = transition[0]
+            next_state = transition[1]
+            transition_symbols = transition[2:]
+            for transition_symbol in transition_symbols:
+                self._transitions[start_state][transition_symbol] = next_state
 
+    def __make_violations_structure(self):
+        self._violators = {}
+        for state in self._states:
+            self._violators[state] = []
+            for symbol in self._alphabet:
+                if symbol in self._transitions[state] and self._transitions[
+                        state][symbol] in self._accepts:
+                    self._violators[state].append(symbol)
 
-class DFA:
-    def __init__(self, reg_ex):
-        self.dfa = regex2dfa(reg_ex)
-        self.current_state = 'q0'
-        self.num_states = len(self.dfa.nodes())
-        self.state_ids = dict(zip(self.dfa.nodes(), range(self.num_states)))
+    @staticmethod
+    def from_string(dfa_string):
+        """Constructs an instance of DFA from a string"""
+        data = sexpdata.loads(dfa_string)
+        if data[0] != sexpdata.Symbol('defdfa'):
+            raise ValueError("dfa_string %s is improperly formatted." %
+                             (dfa_string))
+        name = data[1].value()
+        alphabet = data[2][0]
+        state_list = data[2][1]
+        start_state = data[2][2]
+        accept_states = data[2][3]
+        transition_list = data[3]
+        return DFA(name, alphabet, state_list, start_state, accept_states,
+                   transition_list)
 
-    def step(self, action):
-        is_accept, self.current_state = self._traverse_dfa(
-            action, self.current_state)
-        return is_accept
+    def step(self, token):
+        """Steps the internal state with an input token"""
+        if token in self._transitions[self._current_state]:
+            self._current_state = self._transitions[self._current_state][token]
+        else:
+            self._current_state = self._start
+        return self.is_accepting
 
     def reset(self):
-        self.current_state = 'q0'
+        """Reset the internal state to the start state"""
+        self._current_state = self._start
 
-    def _traverse_dfa(self, char, start):
-        """
-        dfa_dot: dfa in graphviz dot file
-        first return value shows if next state is an accept state
-        second return value is the next state
-        """
-        # convert [1-2][0-9] | 3[0-5] to letter in the upper case alph.
-        if char != 's' and int(char) >= 10 and int(char) <= 35:
-            i = int(char) - 10
-            char = '"{}"'.format(string.ascii_uppercase[i])
+    @property
+    def current_state(self) -> int:
+        """Returns the internal state"""
+        return self._current_state
 
-        dfa = self.dfa
-        accept_states = [
-            n for n in dfa.nodes()
-            if dfa.nodes.data('shape')[n] == 'doublecircle'
-        ]
-        edges = dfa.edges.data('label')
-        transitions = list(filter(lambda x: x[0] == start, edges))
-        for transition in transitions:
-            if transition[2] == str(char):
-                next_state = transition[1]
-                if next_state in accept_states:
-                    return True, next_state
-                else:
-                    return False, next_state
+    @property
+    def states(self):  # -> set(int):
+        """Returns the set of state ids"""
+        return self._states
 
-        return False, 'q0'
-
-    def states(self):
-        return [str(n) for n in self.dfa.nodes()]
-
+    @property
     def accepting_states(self):
-        return [
-            str(n) for n in self.dfa.nodes()
-            if self.dfa.nodes.data('shape')[n] == 'doublecircle'
-        ]
+        return self._accepts
 
-    def state_id(self):
-        return self.state_ids[self.current_state]
+    @property
+    def alphabet(self):  # -> set(int):
+        """Returns the set of valid input tokens"""
+        return self._alphabet
+
+    def violating_inputs(self):  # -> set(int)
+        """Returns the set of input tokens which would move the state to an accepting one"""
+        return self._violators[self._current_state]
+
+    def is_accepting(self):
+        """Returns whether or not the DFA is currently in an accept state"""
+        return self._current_state in self._accepts
