@@ -9,9 +9,12 @@
   :depends-on (:uiop
                :unix-opts
                :prepl
-               :swank)
+               :swank
+               :esrap
+               :parse-number)
   :components ((:file "package")
                (:file "regexp")
+               (:file "read-regexp")
                (:file "nfa")
                (:file "dfa")
                (:file "thompsons-construction")

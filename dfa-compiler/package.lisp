@@ -46,7 +46,13 @@
 
 (defpackage #:dfa-compiler.read-regexp
   (:use #:cl
-        #:regexp))
+        #:regexp)
+  (:nicknames #:read-regexp)
+  (:import-from #:esrap
+                #:defrule
+                #:parse)
+  (:import-from #:parse-number
+                #:parse-number))
 
 (defpackage #:dfa-compiler.conversions.regexp-nfa
   (:use #:cl
