@@ -30,6 +30,10 @@ class Constraint(object):
     def current_state(self):
         return self.dfa.current_state
 
+    @property
+    def num_states(self):
+        return len(self.dfa.states)
+
 class SoftDenseConstraint(Constraint):
     def __init__(self, name, dfa_string, violation_reward, translation_fn, gamma):
         super(SoftDenseConstraint, self).__init__(name, dfa_string, violation_reward, translation_fn)

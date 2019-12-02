@@ -43,9 +43,9 @@ class ConstraintEnv(gym.Wrapper):
     def augment_obs(self, ob):
         if self.augmentation_type == 'constraint_state_concat':
             ob = np.concatenate(
-                [ob] + np.array([c.state_id() for c in self.constraints]))
+                [ob] + np.array([c.current_state for c in self.constraints]))
         elif self.augmentation_type == 'constraint_state_product':
-            ob = (ob, np.array([c.state_id() for c in self.constraints]))
+            ob = (ob, np.array([c.current_state for c in self.constraints]))
         elif self.augmentation_type == 'action_history_product':
             ob = (ob, np.array(self.action_history))
         return ob
