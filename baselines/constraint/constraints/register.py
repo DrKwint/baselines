@@ -37,6 +37,25 @@ def one_d_dithering_dense(reward_shaping, k=2):
                                        gamma=0.99,
                                        s_active=False)
 
+def build_one_d_actuation(num_actions, k):
+    dfa_string_template = '(defdfa {name} (({input_symbols}) ({states}) {start_state} ({accepting_states})) ({transitions}))'
+    transition_template = '({initial_state} {target_state} {symbol})'
+
+    name = '1d_{k}_actuation'.format(k=k)
+    input_symbols = range(num_actions)
+    states = range(num_actions*k + 1) # add one for the start state
+    start_state = 0
+    accepting_states = [a*k for a in range(num_actions]
+
+    transitions = []
+    for a in range(num_actions):
+        transitions.append(transition_template.format(initial_state=0, target_state=a*4+1, symbol=a)
+        for r in range(k):
+            transitions.append(transition_template.format(initial_state=a*4+r+1, target_state=a*4+r+2, symbol=a))
+    
+    dfa_string = dfa_string_template.formta(name=name, input_symbols=input_symbols, states=states, start_state=start_state, accepting_states=accepting_states, transitions=transitions)
+    return dfa_string
+            
 
 @register('1d_actuation')
 def one_d_actuation(reward_shaping):
