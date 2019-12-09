@@ -14,56 +14,65 @@ def register(name):
     return _thunk
 
 
-@register('empty')
-def empty(_):
-    return Constraint('empty', '', 0, s_active=False, a_active=False)
-
-
 @register('1d_dithering')
 def one_d_dithering(reward_shaping, k=2):
-    with open("./baselines/constraint/constraints/1d_dithering.lisp") as dfa_file:
+    with open("./baselines/constraint/constraints/1d_dithering.lisp"
+              ) as dfa_file:
         dfa_string = dfa_file.read()
-    return Constraint('1d_dithering',
-                      dfa_string,
-                      reward_shaping, lambda obs, action, done: action)
+    return Constraint('1d_dithering', dfa_string, reward_shaping,
+                      lambda obs, action, done: action)
 
-
-@register('1d_dithering_dense')
-def one_d_dithering_dense(reward_shaping, k=2):
-    DITHERING1D_REGEX = lambda k: '(23){k}|(32){k}'.format(k=k)
-    return CountingPotentialConstraint('1d_dithering_dense',
-                                       DITHERING1D_REGEX(k),
-                                       reward_shaping,
-                                       gamma=0.99,
-                                       s_active=False)
 
 def build_one_d_actuation(num_actions, k):
     dfa_string_template = '(defdfa {name} (({input_symbols}) ({states}) {start_state} ({accepting_states})) ({transitions}))'
     transition_template = '({initial_state} {target_state} {symbol})'
 
     name = '1d_{k}_actuation'.format(k=k)
-    input_symbols = range(num_actions)
-    states = range(num_actions*k + 1) # add one for the start state
+    input_symbols = ' '.join(list(map(str, range(num_actions))))
+    states = ' '.join(list(map(str, range(num_actions * k +
+                                          1))))  # add one for the start state
     start_state = 0
-    accepting_states = [a*k for a in range(num_actions]
+    accepting_states = ' '.join(
+        [str(a * k) for a in range(1, num_actions + 1)])
 
     transitions = []
     for a in range(num_actions):
-        transitions.append(transition_template.format(initial_state=0, target_state=a*4+1, symbol=a)
-        for r in range(k):
-            transitions.append(transition_template.format(initial_state=a*4+r+1, target_state=a*4+r+2, symbol=a))
-    
-    dfa_string = dfa_string_template.formta(name=name, input_symbols=input_symbols, states=states, start_state=start_state, accepting_states=accepting_states, transitions=transitions)
-    return dfa_string
-            
+        transitions.append(
+            transition_template.format(initial_state=0,
+                                       target_state=a * k + 1,
+                                       symbol=a))
+        for r in range(k - 1):
+            transitions.append(
+                transition_template.format(initial_state=a * k + r + 1,
+                                           target_state=a * k + r + 2,
+                                           symbol=a))
+    transitions = ' '.join(transitions)
 
-@register('1d_actuation')
-def one_d_actuation(reward_shaping):
-    ACTUATION1D_REGEX = lambda k: '2{k}|3{k}'.format(k=k)
-    return Constraint('1d_actuation',
-                      ACTUATION1D_REGEX(4),
+    dfa_string = dfa_string_template.format(name=name,
+                                            input_symbols=input_symbols,
+                                            states=states,
+                                            start_state=start_state,
+                                            accepting_states=accepting_states,
+                                            transitions=transitions)
+    return dfa_string
+
+
+@register('1d_actuation_breakout4')
+def oned_actuation_breakout4(reward_shaping):
+    return Constraint('1d_actuation_breakout4',
+                      build_one_d_actuation(4, k=4),
                       reward_shaping,
-                      s_active=False)
+                      translation_fn=lambda obs, action, done: action)
+
+
+@register('1d_actuation_spaceinvaders4')
+def oned_actuation_spaceinvaders4(reward_shaping):
+    translation_dict = dict([(0, 0), (1, 1), (2, 2), (3, 3), (4, 2), (5, 3)])
+    translation_fn = lambda obs, action, done: translation_dict[action]
+    return Constraint('1d_actuation_breakout4',
+                      build_one_d_actuation(4, k=4),
+                      reward_shaping,
+                      translation_fn=translation_fn)
 
 
 @register('1d_actuation_dense')
