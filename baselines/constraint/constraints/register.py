@@ -14,13 +14,24 @@ def register(name):
     return _thunk
 
 
-@register('1d_dithering')
-def one_d_dithering(reward_shaping, k=2):
+@register('1d_dithering_breakout')
+def one_d_dithering_breakout(reward_shaping, k=2):
     with open("./baselines/constraint/constraints/1d_dithering.lisp"
               ) as dfa_file:
         dfa_string = dfa_file.read()
     return Constraint('1d_dithering', dfa_string, reward_shaping,
                       lambda obs, action, done: action)
+
+
+@register('1d_dithering_spaceinvaders')
+def one_d_dithering_spaceinvaders(reward_shaping, k=2):
+    with open("./baselines/constraint/constraints/1d_dithering.lisp"
+              ) as dfa_file:
+        dfa_string = dfa_file.read()
+    translation_dict = dict([(0, 0), (1, 1), (2, 2), (3, 3), (4, 2), (5, 3)])
+    translation_fn = lambda obs, action, done: translation_dict[action]
+    return Constraint('1d_dithering', dfa_string, reward_shaping,
+                      translation_fn)
 
 
 def build_one_d_actuation(num_actions, k):
@@ -57,7 +68,7 @@ def build_one_d_actuation(num_actions, k):
     return dfa_string
 
 
-@register('1d_actuation_breakout4')
+@register('1d_actuation4_breakout')
 def oned_actuation_breakout4(reward_shaping):
     return Constraint('1d_actuation_breakout4',
                       build_one_d_actuation(4, k=4),
@@ -65,7 +76,7 @@ def oned_actuation_breakout4(reward_shaping):
                       translation_fn=lambda obs, action, done: action)
 
 
-@register('1d_actuation_spaceinvaders4')
+@register('1d_actuation4_spaceinvaders')
 def oned_actuation_spaceinvaders4(reward_shaping):
     translation_dict = dict([(0, 0), (1, 1), (2, 2), (3, 3), (4, 2), (5, 3)])
     translation_fn = lambda obs, action, done: translation_dict[action]
