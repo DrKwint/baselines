@@ -14,7 +14,7 @@ def register(name):
     return _thunk
 
 
-@register('1d_dithering_Breakout')
+@register('1d_dithering2_Breakout')
 def one_d_dithering_breakout(reward_shaping, k=2):
     with open("./baselines/constraint/constraints/1d_dithering.lisp"
               ) as dfa_file:
@@ -23,7 +23,7 @@ def one_d_dithering_breakout(reward_shaping, k=2):
                       lambda obs, action, done: action)
 
 
-@register('1d_dithering_SpaceInvaders')
+@register('1d_dithering2_SpaceInvaders')
 def one_d_dithering_spaceinvaders(reward_shaping, k=2):
     with open("./baselines/constraint/constraints/1d_dithering.lisp"
               ) as dfa_file:
