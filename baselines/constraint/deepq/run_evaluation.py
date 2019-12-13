@@ -234,6 +234,7 @@ def main(args):
     else:
         states = np.zeros((int(args.num_timesteps),) + env.observation_space.shape)
         constraint_states = []
+        episode_rewards = []
 
         logger.log("Running loaded model")
         obs = env.reset()
@@ -259,10 +260,11 @@ def main(args):
             done_any = done.any() if isinstance(done, np.ndarray) else done
             if done_any:
                 for i in np.nonzero(done)[0]:
-                    print('episode_rew={}'.format(episode_rew[i]))
+                    episode_rewards.append(episode_rew[0])
                     episode_rew[i] = 0
                 env.reset()
 
+        np.save(osp.join(logger.get_dir(), 'episode_rewards'), episode_rewards)
         np.save(osp.join(logger.get_dir(), 'states'), states)
         if len(constraint_states) > 0:
             np.save(osp.join(logger.get_dir(), 'constraint_states'), np.array(constraint_states))
