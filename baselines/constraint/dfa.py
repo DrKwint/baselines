@@ -51,6 +51,8 @@ class DFA(object):
 
     def step(self, token):
         """Steps the internal state with an input token"""
+        if type(token) is not int:
+            token = token[0]
         if token in self._transitions[self._current_state]:
             self._current_state = self._transitions[self._current_state][token]
         else:
