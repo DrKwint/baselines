@@ -223,10 +223,14 @@ def main(args):
     q_vals = np.zeros((int(args.num_timesteps), env.action_space.n))
 
     # if we have already collected trajectories
-    if 'experiences' in args.__dict__:
+    if 'experience_dir' in args.__dict__:
         logger.log("Loading collected experiences")
         # TODO: fix by adding loading of constraint state and finding the right files
-        states = np.load(args.experience_dir)
+        states = np.load(osp.join(args.experience_dir, 'states'))
+        if file_exists:
+            constraint_states = np.load(osp.join(args.experience_dir, 'constraint_states'))
+        else:
+            constraint_states = []
     else:
         states = np.zeros((int(args.num_timesteps),) + env.observation_space.shape)
         constraint_states = []
