@@ -95,7 +95,7 @@ def make_env(env_id,
         env_id = re.sub('.*:', '', env_id)
         importlib.import_module(module_name)
     if env_type == 'atari':
-        env = make_atari(env_id)
+        env = make_atari(env_id, log_path=logger_dir + '/raw_monitor.csv')
     elif env_type == 'retro':
         import retro
         gamestate = gamestate or retro.State.DEFAULT
