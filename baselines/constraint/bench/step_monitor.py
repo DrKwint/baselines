@@ -37,6 +37,7 @@ class ConstraintStepMonitor(Wrapper):
         self.log_size = initial_log_size
         self.action_log = None
         self.reward_log = LogBuffer(initial_log_size, (), dtype=np.float32)
+        self.raw_reward_log = LogBuffer(initial_log_size, (), dtype=np.float32)
         self.done_log = LogBuffer(initial_log_size, (), dtype=np.int32)
 
     def step(self, action):
@@ -53,6 +54,7 @@ class ConstraintStepMonitor(Wrapper):
                 self.log_size, act.shape, dtype=np.int32)
         act_ns = self.action_log.log(act)
         rew_ns = self.reward_log.log(rew)
+        raw_rew_ns = self.raw_reward_log.log(info['raw_reward'])
         don_ns = self.done_log.log(done)
         # assert that the logs are staying in step
         assert act_ns == rew_ns
@@ -63,4 +65,5 @@ class ConstraintStepMonitor(Wrapper):
     def save(self):
         self.action_log.save(os.path.join(self.filename, 'action'))
         self.reward_log.save(os.path.join(self.filename, 'reward'))
+        self.raw_reward_log.save(os.path.join(self.filename, 'raw_reward'))
         self.done_log.save(os.path.join(self.filename, 'done'))
