@@ -104,7 +104,7 @@ def build_env(args):
             env = make_env(env_id,
                            env_type,
                            seed=seed,
-                           wrapper_kwargs={'frame_stack': True})
+                           wrapper_kwargs={'frame_stack': True}, logger_dir=logger.get_dir())
         elif alg == 'trpo_mpi':
             if args.augmentation is not None:
                 args.augmentation += '_not_implemented'
@@ -261,7 +261,7 @@ def main(args):
     else:
         save_path = osp.expanduser(osp.join(logger.get_dir(), 'model'))
         model.save(save_path)
-        
+
 
     if args.play and False:
         logger.log("Running trained model")
