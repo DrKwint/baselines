@@ -28,7 +28,7 @@ def one_d_dithering_spaceinvaders(reward_shaping, k=2):
     with open("./baselines/constraint/constraints/1d_dithering.lisp"
               ) as dfa_file:
         dfa_string = dfa_file.read()
-    translation_dict = dict([(0, 0), (1, 1), (2, 2), (3, 3), (4, 2), (5, 3)])
+    translation_dict = dict([(0, 1), (1, 1), (2, 2), (3, 3), (4, 2), (5, 3)])
     translation_fn = lambda obs, action, done: translation_dict[action]
     return Constraint('1d_dithering', dfa_string, reward_shaping,
                       translation_fn)

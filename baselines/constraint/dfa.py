@@ -1,4 +1,5 @@
 import sexpdata
+import numpy as np
 
 
 class DFA(object):
@@ -51,7 +52,10 @@ class DFA(object):
 
     def step(self, token):
         """Steps the internal state with an input token"""
-        if type(token) is not int:
+        # Handle the case where the env passes the token in an iterable
+        if hasattr(token, '__iter__'):
+            if len(token) > 1:
+                raise Exception()
             token = token[0]
         if token in self._transitions[self._current_state]:
             self._current_state = self._transitions[self._current_state][token]
