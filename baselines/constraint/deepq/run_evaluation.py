@@ -6,6 +6,7 @@ import gym
 from collections import defaultdict
 import tensorflow as tf
 import numpy as np
+import shutil
 
 from baselines.common.vec_env import VecFrameStack, VecNormalize, VecEnv
 from baselines.common.vec_env.vec_video_recorder import VecVideoRecorder
@@ -67,7 +68,7 @@ def build_env(args):
             env = make_env(env_id,
                            env_type,
                            seed=seed,
-                           wrapper_kwargs={'frame_stack': True})
+                           wrapper_kwargs={'frame_stack': True}, logger_dir=logger.get_dir())
         elif alg == 'trpo_mpi':
             if args.augmentation is not None:
                 args.augmentation += '_not_implemented'
@@ -278,6 +279,8 @@ def main(args):
             q_input = s
         q_vals[i] = model.q(q_input)
     np.save(osp.join(logger.get_dir(), 'q_vals'), q_vals)
+
+    shutil.copyfile(osp.join(logger.get_dir(), 'log.txt'), osp.join(logger.get_dir(), 'final_log.txt'))
 
 
 if __name__ == '__main__':

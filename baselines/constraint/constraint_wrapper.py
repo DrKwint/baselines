@@ -72,6 +72,8 @@ class ConstraintEnv(gym.Wrapper):
     def step(self, action):
         ob, rew, done, info = self.env.step(action)
         info['raw_reward'] = rew
+        if type(action) is np.ndarray:
+            action = action[0]
         self.action_history.append(action)
         self.action_history.popleft()
         for c in self.constraints:
