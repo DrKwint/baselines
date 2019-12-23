@@ -55,7 +55,7 @@ class ActWrapper(object):
         # DQN doesn't use RNNs so we ignore states and masks
         kwargs.pop('S', None)
         kwargs.pop('M', None)
-        return self._act([observation], **kwargs), None, None, None
+        return self._act(np.array(observation)[None], **kwargs), None, None, None
 
     def save_act(self, path=None):
         """Save model to a pickle located at `path`"""
