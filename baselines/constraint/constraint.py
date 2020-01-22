@@ -8,6 +8,42 @@ from baselines.constraint.dfa import DFA
 
 
 class Constraint(DFA):
+    '''
+    Constraint represents a given constraint to place on the agent.
+       
+    Attributes
+    ==========
+    name : str
+        The name of the constraint
+    reg_ex : str?
+        A representation of the constraint
+        using regular expressions.
+    violation_reward : int
+        The reward signal for violating the
+        constraint. Used in reward shaping.
+    s_tl : ?
+        Unknown. Likely stands for the state
+        translation layer. What that means?
+    a_tl : ?
+        Unknown. Likely stands for the action
+        translation layer. What that means?
+    s_active : boolean
+        A flag indicating if the state 
+        translation layer is in effect?
+    a_active : boolean
+        A flag indicating if the action
+        translation laer is in effect?
+
+    Methods
+    =======
+    __init__(self, name, reg_ex,
+             violation_reward, s_tl,
+             a_tl, s_active, a_active)
+            Initializes a Constraint.
+    step(self, obs,
+         action, done)
+        Performs a step?? This needs explantion.
+    '''
     def __init__(self,
                  name,
                  reg_ex,
@@ -16,7 +52,59 @@ class Constraint(DFA):
                  a_tl=id,
                  s_active=True,
                  a_active=True):
+        '''
+        Parameters
+        ==========
+        self : Constraint
+            The constraint to be initalized
+        name : str
+            The name of the constraint
+        reg_ex : str?
+            A representation of the constraint
+            using regular expressions.
+        violation_reward : int
+            The reward signal for violating the
+            constraint. Used in reward shaping.
+        s_tl : ?
+            Unknown. Likely stands for the state
+            translation layer. What that means?
+        a_tl : ?
+            Unknown. Likely stands for the action
+            translation layer. What that means?
+        s_active : boolean
+            A flag indicating if the state 
+            translation layer is in effect?
+        a_active : boolean
+            A flag indicating if the action
+            translation laer is in effect?
+        '''
         super(Constraint, self).__init__(reg_ex)
+        '''
+        Initialization function called by classes that inherit Constraint.
+        More information may be necessary
+        Parameters
+        ==========
+        name : str
+            The name of the constraint
+        reg_ex : str?
+            A representation of the constraint
+            using regular expressions.
+        violation_reward : int
+            The reward signal for violating the
+            constraint. Used in reward shaping.
+        s_tl : ?
+            Unknown. Likely stands for the state
+            translation layer. What that means?
+        a_tl : ?
+            Unknown. Likely stands for the action
+            translation layer. What that means?
+        s_active : boolean
+            A flag indicating if the state 
+            translation layer is in effect?
+        a_active : boolean
+            A flag indicating if the action
+            translation laer is in effect?
+        '''
         self.name = name
         self.violation_reward = violation_reward
         self.s_tl = s_tl
