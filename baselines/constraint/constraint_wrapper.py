@@ -8,7 +8,7 @@ from baselines.constraint.bench.step_monitor import LogBuffer
 import collections
 from gym.spaces.box import Box
 
-
+#TODO: Add documentation describing what's happening here
 class ConstraintEnv(gym.Wrapper):
     def __init__(self,
                  env,
@@ -41,6 +41,27 @@ class ConstraintEnv(gym.Wrapper):
             self.logs = None
 
     def augment_obs(self, ob):
+        """Augment the current observation.
+
+        Parameters
+        ----------
+        self: ConstraintEnv
+            A data structure that serves as 
+            a wrapper to the Gym environment.
+
+        ob: Tensor?
+            A Tensor? or data structure that
+            represents the observation of the
+            state.
+        
+        Returns
+        -------
+        ob: Tensor?
+            An Tensor? or data structure that 
+            is augmented either via concatenation 
+            or otherwise with either the constraint
+            state, or the action history.
+        """
         if self.augmentation_type == 'constraint_state_concat':
             ob = np.concatenate(
                 [ob] + np.array([c.current_state for c in self.constraints]))
@@ -51,6 +72,25 @@ class ConstraintEnv(gym.Wrapper):
         return ob
 
     def reset(self, **kwargs):
+        """Reset the environment and update logs.
+
+        Parameters
+        ----------
+        self: ConstraintEnv
+            A data structure that serves as 
+            a wrapper to the Gym environment.
+        **kwargs: None
+            A data structure that allows for
+            the passing of additional arguments
+            that are keyworded into the function.
+
+        Returns
+        -------
+        ob: Tensor?
+            An Tensor? or data structure that 
+            is augmented using the augment_obs
+            function after being reset.
+        """    
         [c.reset() for c in self.constraints]
         [
             log.save(os.path.join(self.log_dir, c.name + '_viols'))
@@ -70,6 +110,32 @@ class ConstraintEnv(gym.Wrapper):
         return ob
 
     def step(self, action):
+        """
+        Perform a step in the environment and 
+        evaluate if any constraints have been violated.
+
+        Parameters
+        ----------
+        self: ConstraintEnv
+            A data structure that serves as 
+            a wrapper to the Gym environment.
+        act: ActWrapper
+            A function that takes a batch of
+            observations and returns actions.
+
+        Returns
+        -------
+        ob: Tensor?
+            An Tensor? or data structure that 
+            is augmented using the augment_obs
+            function after being reset.
+        rew: 
+            The reward provided by the environment.
+        done: Boolean?
+            Whether or not the episode is finished.
+        info: ??
+            Unclear.
+        """
         ob, rew, done, info = self.env.step(action)
         info['raw_reward'] = rew
         if type(action) is np.ndarray:
