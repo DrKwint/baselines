@@ -15,24 +15,30 @@ class Constraint(DFA):
     ==========
     name : str
         The name of the constraint
-    reg_ex : str?
+    reg_ex : str
         A representation of the constraint
         using regular expressions.
     violation_reward : int
         The reward signal for violating the
         constraint. Used in reward shaping.
-    s_tl : ?
-        Unknown. Likely stands for the state
-        translation layer. What that means?
-    a_tl : ?
-        Unknown. Likely stands for the action
-        translation layer. What that means?
+    #TODO: Elaborate what the data-type of state and action transition layer are.
+    s_tl : Object
+        Stands for the state translation layer
+        Takes in the state returned by the
+        environment and returns
+        alphabet of the DFA. 
+    #TODO: Elaborate what the data-type of state and action transition layer are.
+    a_tl : Object
+        Stands for the action translation layer. 
+        Takes in the action returned by the
+        environment and returns a token in
+        alphabet of the DFA.
     s_active : boolean
         A flag indicating if the state 
-        translation layer is in effect?
+        translation layer is in effect.
     a_active : boolean
         A flag indicating if the action
-        translation laer is in effect?
+        translation laer is in effect.
 
     Methods
     =======
@@ -42,7 +48,9 @@ class Constraint(DFA):
             Initializes a Constraint.
     step(self, obs,
          action, done)
-        Performs a step?? This needs explantion.
+        Runs one step of the constraint mechanism
+        which takes steps in paralell with the MDP
+        it is attached to.
     '''
     def __init__(self,
                  name,
@@ -59,18 +67,24 @@ class Constraint(DFA):
             The constraint to be initalized
         name : str
             The name of the constraint
-        reg_ex : str?
+        reg_ex : str
             A representation of the constraint
             using regular expressions.
         violation_reward : int
             The reward signal for violating the
             constraint. Used in reward shaping.
-        s_tl : ?
-            Unknown. Likely stands for the state
-            translation layer. What that means?
-        a_tl : ?
-            Unknown. Likely stands for the action
-            translation layer. What that means?
+        #TODO: Elaborate what the data-type of state and action transition layer are.
+        s_tl : Object
+            Stands for the state translation layer
+            Takes in the state returned by the
+            environment and returns
+            alphabet of the DFA. 
+        #TODO: Elaborate what the data-type of state and action transition layer are.
+        a_tl : Object
+            Stands for the action translation layer. 
+            Takes in the action returned by the
+            environment and returns a token in
+            alphabet of the DFA.
         s_active : boolean
             A flag indicating if the state 
             translation layer is in effect?
@@ -86,24 +100,30 @@ class Constraint(DFA):
         ==========
         name : str
             The name of the constraint
-        reg_ex : str?
+        reg_ex : str
             A representation of the constraint
             using regular expressions.
         violation_reward : int
             The reward signal for violating the
             constraint. Used in reward shaping.
-        s_tl : ?
-            Unknown. Likely stands for the state
-            translation layer. What that means?
-        a_tl : ?
-            Unknown. Likely stands for the action
-            translation layer. What that means?
+        #TODO: Elaborate what the data-type of state and action transition layer are.
+        s_tl : Object
+            Stands for the state translation layer
+            Takes in the state returned by the
+            environment and returns
+            alphabet of the DFA. 
+        #TODO: Elaborate what the data-type of state and action transition layer are.
+        a_tl : Object
+            Stands for the action translation layer. 
+            Takes in the action returned by the
+            environment and returns a token in
+            alphabet of the DFA.
         s_active : boolean
             A flag indicating if the state 
-            translation layer is in effect?
+            translation layer is in effect.
         a_active : boolean
             A flag indicating if the action
-            translation laer is in effect?
+            translation laer is in effect.
         '''
         self.name = name
         self.violation_reward = violation_reward

@@ -49,15 +49,15 @@ class ConstraintEnv(gym.Wrapper):
             A data structure that serves as 
             a wrapper to the Gym environment.
 
-        ob: Tensor?
-            A Tensor? or data structure that
-            represents the observation of the
-            state.
+        ob: LazyFrames (from gym.wrappers.frame_stack)
+            A LazyFrames object that represents
+            the observation of the state.
+            Basically akin to a numpy array.
         
         Returns
         -------
-        ob: Tensor?
-            An Tensor? or data structure that 
+        ob: Iterable
+            An Iterable containing the observation that 
             is augmented either via concatenation 
             or otherwise with either the constraint
             state, or the action history.
@@ -86,10 +86,12 @@ class ConstraintEnv(gym.Wrapper):
 
         Returns
         -------
-        ob: Tensor?
-            An Tensor? or data structure that 
+        ob: LazyFrames
+            A LazyFrames object that 
             is augmented using the augment_obs
             function after being reset.
+            Basically akin to a numpy array.
+            An Tensor? or data structure 
         """    
         [c.reset() for c in self.constraints]
         [
@@ -125,16 +127,21 @@ class ConstraintEnv(gym.Wrapper):
 
         Returns
         -------
-        ob: Tensor?
-            An Tensor? or data structure that 
+        ob: Object (Numpy Array)
+            Basically a Numpy array wrapped in 
+            another data structure that 
             is augmented using the augment_obs
             function after being reset.
-        rew: 
+        rew: float
             The reward provided by the environment.
-        done: Boolean?
+        done: Boolean
             Whether or not the episode is finished.
-        info: ??
-            Unclear.
+            Environments reset when episodes finish.
+        info: dict
+            Fetched from OpenAI Gym documentation.
+            Contains diagnostic information (e.g.,
+            raw probablities, etc.). Not used in
+            learning.
         """
         ob, rew, done, info = self.env.step(action)
         self.action_history.append(action)
