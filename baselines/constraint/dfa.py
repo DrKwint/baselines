@@ -11,6 +11,29 @@ JAR_DIR = './baselines/constraint'
 
 
 def regex2dfa(reg_ex, letter='q'):
+    """
+        Convert a regular expression into a DFA graph.
+
+        Given a regular expression and a letter, create a
+        DFA (Deterministic Finite Automata) in graphical form
+        using PyGraphViz.
+
+        Parameters
+        ----------
+        reg_ex : str
+            The regular expression that will be converted.
+        letter : str, Optional [UNUSED]
+            The letter denoting the starting state?
+            This argument does not seem to be used
+            in this function.
+
+        Returns
+        -------
+            : NetworkX Graph
+            The DFA equivalent of the regular expression.
+            Formatted using PyGraphViz first, then converted
+            into a NetworkX Graph.
+    """
     transfer_file = tempfile.NamedTemporaryFile(mode='w+')
     command = 'java -jar {}/regex2dfa.jar "{}" {}'.format(
         JAR_DIR, reg_ex, transfer_file.name)
@@ -30,6 +53,24 @@ class DFA:
         self.state_ids = dict(zip(self.dfa.nodes(), range(self.num_states)))
 
     def step(self, action):
+        """
+            Performs a step in the DFA.
+
+            Peforms a step in the DFA and then returns
+            whether the resulting state is an accepting state.
+
+            Parameters
+            ----------
+            action : str
+                A character representing the action
+                taken by the agent.
+            
+            Returns
+            -------
+            is_accept : boolean
+                A flag indicating whether or not the
+                resulting state is an accepting state.
+        """
         is_accept, self.current_state = self._traverse_dfa(
             action, self.current_state)
         return is_accept
@@ -39,9 +80,11 @@ class DFA:
 
     def _traverse_dfa(self, char, start):
         """
-        dfa_dot: dfa in graphviz dot file
-        first return value shows if next state is an accept state
-        second return value is the next state
+            Traverse through the DFA.
+
+            dfa_dot: dfa in graphviz dot file
+            first return value shows if next state is an accept state
+            second return value is the next state
         """
         # convert [1-2][0-9] | 3[0-5] to letter in the upper case alph.
         if char != 's' and int(char) >= 10 and int(char) <= 35:
@@ -66,13 +109,22 @@ class DFA:
         return False, 'q0'
 
     def states(self):
+        """
+            Return the states present in the DFA.
+        """
         return [str(n) for n in self.dfa.nodes()]
 
     def accepting_states(self):
+        """
+            Return all accepting states present in the DFA.
+        """
         return [
             str(n) for n in self.dfa.nodes()
             if self.dfa.nodes.data('shape')[n] == 'doublecircle'
         ]
 
     def state_id(self):
+        """
+            Return the ID of the current state.
+        """
         return self.state_ids[self.current_state]

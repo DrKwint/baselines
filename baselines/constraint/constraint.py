@@ -8,63 +8,11 @@ from baselines.constraint.dfa import DFA
 
 
 class Constraint(DFA):
-    '''
-    Constraint represents a given constraint to place on the agent.
-       
-    Attributes
-    ==========
-    name : str
-        The name of the constraint
-    reg_ex : str
-        A representation of the constraint
-        using regular expressions.
-    violation_reward : int
-        The reward signal for violating the
-        constraint. Used in reward shaping.
-    #TODO: Elaborate what the data-type of state and action transition layer are.
-    s_tl : Object
-        Stands for the state translation layer
-        Takes in the state returned by the
-        environment and returns
-        alphabet of the DFA. 
-    #TODO: Elaborate what the data-type of state and action transition layer are.
-    a_tl : Object
-        Stands for the action translation layer. 
-        Takes in the action returned by the
-        environment and returns a token in
-        alphabet of the DFA.
-    s_active : boolean
-        A flag indicating if the state 
-        translation layer is in effect.
-    a_active : boolean
-        A flag indicating if the action
-        translation laer is in effect.
-
-    Methods
-    =======
-    __init__(self, name, reg_ex,
-             violation_reward, s_tl,
-             a_tl, s_active, a_active)
-            Initializes a Constraint.
-    step(self, obs,
-         action, done)
-        Runs one step of the constraint mechanism
-        which takes steps in paralell with the MDP
-        it is attached to.
-    '''
-    def __init__(self,
-                 name,
-                 reg_ex,
-                 violation_reward,
-                 s_tl=id,
-                 a_tl=id,
-                 s_active=True,
-                 a_active=True):
-        '''
-        Parameters
+    """
+        Constraint represents a given constraint to place on the agent.
+        
+        Attributes
         ==========
-        self : Constraint
-            The constraint to be initalized
         name : str
             The name of the constraint
         reg_ex : str
@@ -73,48 +21,13 @@ class Constraint(DFA):
         violation_reward : int
             The reward signal for violating the
             constraint. Used in reward shaping.
-        #TODO: Elaborate what the data-type of state and action transition layer are.
-        s_tl : Object
+        s_tl : Object, Callable(state)->str
             Stands for the state translation layer
             Takes in the state returned by the
             environment and returns
-            alphabet of the DFA. 
-        #TODO: Elaborate what the data-type of state and action transition layer are.
-        a_tl : Object
-            Stands for the action translation layer. 
-            Takes in the action returned by the
-            environment and returns a token in
             alphabet of the DFA.
-        s_active : boolean
-            A flag indicating if the state 
-            translation layer is in effect?
-        a_active : boolean
-            A flag indicating if the action
-            translation laer is in effect?
-        '''
-        super(Constraint, self).__init__(reg_ex)
-        '''
-        Initialization function called by classes that inherit Constraint.
-        More information may be necessary
-        Parameters
-        ==========
-        name : str
-            The name of the constraint
-        reg_ex : str
-            A representation of the constraint
-            using regular expressions.
-        violation_reward : int
-            The reward signal for violating the
-            constraint. Used in reward shaping.
-        #TODO: Elaborate what the data-type of state and action transition layer are.
-        s_tl : Object
-            Stands for the state translation layer
-            Takes in the state returned by the
-            environment and returns
-            alphabet of the DFA. 
-        #TODO: Elaborate what the data-type of state and action transition layer are.
-        a_tl : Object
-            Stands for the action translation layer. 
+        a_tl : Object, Callable(state)->str
+            Stands for the action translation layer.
             Takes in the action returned by the
             environment and returns a token in
             alphabet of the DFA.
@@ -124,7 +37,61 @@ class Constraint(DFA):
         a_active : boolean
             A flag indicating if the action
             translation laer is in effect.
-        '''
+
+        Methods
+        =======
+        __init__(self, name, reg_ex,
+                violation_reward, s_tl,
+                a_tl, s_active, a_active)
+                Initializes a Constraint.
+        step(self, obs,
+            action, done)
+            Runs one step of the constraint mechanism
+            which takes steps in paralell with the MDP
+            it is attached to.
+    """
+    def __init__(self,
+                 name,
+                 reg_ex,
+                 violation_reward,
+                 s_tl=id,
+                 a_tl=id,
+                 s_active=True,
+                 a_active=True):
+        """
+            Initializes a Constraint.
+
+            Parameters
+            ==========
+            self : Constraint
+                The constraint to be initalized
+            name : str
+                The name of the constraint
+            reg_ex : str
+                A representation of the constraint
+                using regular expressions.
+            violation_reward : int
+                The reward signal for violating the
+                constraint. Used in reward shaping.
+            s_tl : Object, Callable(state)->str
+                Stands for the state translation layer
+                Takes in the state returned by the
+                environment and returns
+                alphabet of the DFA. 
+            a_tl : Object, Callable(state)->str
+                Stands for the action translation layer. 
+                Takes in the action returned by the
+                environment and returns a token in
+                alphabet of the DFA.
+            s_active : boolean
+                A flag indicating if the state 
+                translation layer is in effect.
+            a_active : boolean
+                A flag indicating if the action
+                translation layer is in effect.
+        """
+        #TODO: Requesting clarification on the super() call.
+        super(Constraint, self).__init__(reg_ex)
         self.name = name
         self.violation_reward = violation_reward
         self.s_tl = s_tl
@@ -133,6 +100,29 @@ class Constraint(DFA):
         self.a_active = a_active
 
     def step(self, obs, action, done):
+        """
+            Take a step in the constraint mechanism.
+
+            Runs one step of the constraint mechanism
+            which takes steps in paralell with the MDP
+            it is attached to.
+        
+            Parameters
+            ----------
+            #TODO: Requesting explanation of paramters
+            here. Need clarification on if obs, action
+            and done are the same as the one in DQN.
+            
+            Returns
+            -------
+            is_viol : boolean
+                A flag indicating if the constraint is violated.
+            rew_mod : float
+                The modification to the reward signal
+                depending on if the constraint is violated
+                or not. If no violations occurred, the
+                modification should be 0.
+        """
         is_viol = False
         if self.s_active and self.a_active:
             is_viol = is_viol | super().step('s')

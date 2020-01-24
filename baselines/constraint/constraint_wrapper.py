@@ -41,26 +41,32 @@ class ConstraintEnv(gym.Wrapper):
             self.logs = None
 
     def augment_obs(self, ob):
-        """Augment the current observation.
+        """
+            Augment the current observation.
 
-        Parameters
-        ----------
-        self: ConstraintEnv
-            A data structure that serves as 
-            a wrapper to the Gym environment.
+            Augments the current observation by
+            adding additional infomation from the
+            constraints, either as the constraint
+            state or action history.
+            
+            Parameters
+            ----------
+            self: ConstraintEnv
+                A data structure that serves as 
+                a wrapper to the Gym environment.
 
-        ob: LazyFrames (from gym.wrappers.frame_stack)
-            A LazyFrames object that represents
-            the observation of the state.
-            Basically akin to a numpy array.
-        
-        Returns
-        -------
-        ob: Iterable
-            An Iterable containing the observation that 
-            is augmented either via concatenation 
-            or otherwise with either the constraint
-            state, or the action history.
+            ob: LazyFrames (from gym.wrappers.frame_stack)
+                A LazyFrames object that represents
+                the observation of the state.
+                Basically akin to a numpy array.
+            
+            Returns
+            -------
+            ob: Iterable
+                An Iterable containing the observation that 
+                is augmented either via concatenation 
+                or otherwise with either the constraint
+                state, or the action history.
         """
         if self.augmentation_type == 'constraint_state_concat':
             ob = np.concatenate(
@@ -72,26 +78,26 @@ class ConstraintEnv(gym.Wrapper):
         return ob
 
     def reset(self, **kwargs):
-        """Reset the environment and update logs.
+        """
+            Reset the environment and update logs.
 
-        Parameters
-        ----------
-        self: ConstraintEnv
-            A data structure that serves as 
-            a wrapper to the Gym environment.
-        **kwargs: None
-            A data structure that allows for
-            the passing of additional arguments
-            that are keyworded into the function.
+            Parameters
+            ----------
+            self: ConstraintEnv
+                A data structure that serves as 
+                a wrapper to the Gym environment.
+            **kwargs: None
+                A data structure that allows for
+                the passing of additional arguments
+                that are keyworded into the function.
 
-        Returns
-        -------
-        ob: LazyFrames
-            A LazyFrames object that 
-            is augmented using the augment_obs
-            function after being reset.
-            Basically akin to a numpy array.
-            An Tensor? or data structure 
+            Returns
+            -------
+            ob: LazyFrames
+                A LazyFrames object that 
+                is augmented using the augment_obs
+                function after being reset.
+                Basically akin to a numpy array.
         """    
         [c.reset() for c in self.constraints]
         [
@@ -113,35 +119,34 @@ class ConstraintEnv(gym.Wrapper):
 
     def step(self, action):
         """
-        Perform a step in the environment and 
-        evaluate if any constraints have been violated.
+            Perform a step in the environment and 
+            evaluate if any constraints have been violated.
 
-        Parameters
-        ----------
-        self: ConstraintEnv
-            A data structure that serves as 
-            a wrapper to the Gym environment.
-        act: ActWrapper
-            A function that takes a batch of
-            observations and returns actions.
+            Parameters
+            ----------
+            self: ConstraintEnv
+                A data structure that serves as 
+                a wrapper to the Gym environment.
+            act: ActWrapper
+                A function that takes a batch of
+                observations and returns actions.
 
-        Returns
-        -------
-        ob: Object (Numpy Array)
-            Basically a Numpy array wrapped in 
-            another data structure that 
-            is augmented using the augment_obs
-            function after being reset.
-        rew: float
-            The reward provided by the environment.
-        done: Boolean
-            Whether or not the episode is finished.
-            Environments reset when episodes finish.
-        info: dict
-            Fetched from OpenAI Gym documentation.
-            Contains diagnostic information (e.g.,
-            raw probablities, etc.). Not used in
-            learning.
+            Returns
+            -------
+            ob: Object (Numpy Array)
+                Basically a Numpy array wrapped in 
+                another data structure that 
+                is augmented using the augment_obs
+                function after being reset.
+            rew: float
+                The reward provided by the environment.
+            done: Boolean
+                Whether or not the episode is finished.
+                Environments reset when episodes finish.
+            info: dict
+                Contains diagnostic information (e.g.,
+                raw probablities, etc.). Not used in
+                learning.
         """
         ob, rew, done, info = self.env.step(action)
         self.action_history.append(action)
