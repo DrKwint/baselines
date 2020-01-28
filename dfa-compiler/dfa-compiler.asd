@@ -13,6 +13,7 @@
                :esrap
                :parse-number)
   :components ((:file "package")
+               (:file "utils")
                (:file "regexp")
                (:file "read-regexp")
                (:file "nfa")

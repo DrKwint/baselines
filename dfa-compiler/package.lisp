@@ -1,7 +1,12 @@
 ;;;; package.lisp
 
-(defpackage #:dfa-compiler.representations.regexp
+(defpackage #:dfa-compiler.utils
   (:use #:cl)
+  (:nicknames #:utils))
+
+(defpackage #:dfa-compiler.representations.regexp
+  (:use #:cl
+        #:utils)
   (:nicknames #:regexp)
   (:export #:*regexp-as-latex*
            #:<regexp>
@@ -15,6 +20,7 @@
 
 (defpackage #:dfa-compiler.representations.nfa
   (:use #:cl
+        #:utils
         #:regexp)
   (:nicknames #:nfa)
   (:export #:<nfa-node>
@@ -37,6 +43,7 @@
 
 (defpackage #:dfa-compiler.representations.dfa
   (:use #:cl
+        #:utils
         #:nfa)
   (:nicknames #:dfa)
   (:export #:<dfa-node>
@@ -46,6 +53,7 @@
 
 (defpackage #:dfa-compiler.read-regexp
   (:use #:cl
+        #:utils
         #:regexp)
   (:nicknames #:read-regexp)
   (:import-from #:esrap
@@ -56,6 +64,7 @@
 
 (defpackage #:dfa-compiler.conversions.regexp-nfa
   (:use #:cl
+        #:utils
         #:regexp
         #:nfa)
   (:nicknames #:regexp-nfa)
@@ -63,16 +72,19 @@
 
 (defpackage #:dfa-compiler.conversions.nfa-dfa
   (:use #:cl
+        #:utils
         #:nfa
         #:dfa)
   (:nicknames #:nfa-dfa))
 
 (defpackage #:dfa-compiler.dfa-minimizer
   (:use #:cl
+        #:utils
         #:dfa))
 
 (defpackage #:dfa-compiler
-  (:use #:cl)
+  (:use #:cl
+        #:utils)
   (:import-from #:uiop
                 #:quit
                 #:argv0
