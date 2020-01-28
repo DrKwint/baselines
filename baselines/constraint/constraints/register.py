@@ -19,7 +19,7 @@ def one_d_dithering_breakout(reward_shaping, k=2):
     with open("./baselines/constraint/constraints/1d_dithering.lisp"
               ) as dfa_file:
         dfa_string = dfa_file.read()
-    return Constraint('1d_dithering', dfa_string, reward_shaping,
+    return Constraint('1d_dithering2_Breakout', dfa_string, reward_shaping,
                       lambda obs, action, done: action)
 
 
@@ -30,7 +30,7 @@ def one_d_dithering_spaceinvaders(reward_shaping, k=2):
         dfa_string = dfa_file.read()
     translation_dict = dict([(0, 1), (1, 1), (2, 2), (3, 3), (4, 2), (5, 3)])
     translation_fn = lambda obs, action, done: translation_dict[action]
-    return Constraint('1d_dithering', dfa_string, reward_shaping,
+    return Constraint('1d_dithering2_SpaceInvaders', dfa_string, reward_shaping,
                       translation_fn)
 
 
@@ -80,7 +80,7 @@ def oned_actuation_breakout4(reward_shaping):
 def oned_actuation_spaceinvaders4(reward_shaping):
     translation_dict = dict([(0, 0), (1, 1), (2, 2), (3, 3), (4, 2), (5, 3)])
     translation_fn = lambda obs, action, done: translation_dict[action]
-    return Constraint('1d_actuation_breakout4',
+    return Constraint('1d_actuation_SpaceInvaders',
                       build_one_d_actuation(4, k=4),
                       reward_shaping,
                       translation_fn=translation_fn)
