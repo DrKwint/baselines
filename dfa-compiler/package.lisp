@@ -2,7 +2,8 @@
 
 (defpackage #:dfa-compiler.utils
   (:use #:cl)
-  (:nicknames #:utils))
+  (:nicknames #:utils)
+  (:export #:ensure-list))
 
 (defpackage #:dfa-compiler.representations.regexp
   (:use #:cl
