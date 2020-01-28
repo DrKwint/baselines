@@ -48,6 +48,7 @@
         #:nfa)
   (:nicknames #:dfa)
   (:export #:<dfa-node>
+           #:<dfa-multi-node>
            #:<dfa-edge>
            #:transitionable-symbols
            #:<dfa>))

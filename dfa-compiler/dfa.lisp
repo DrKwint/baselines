@@ -10,6 +10,9 @@
   ((label :initarg :label)
    (edges-out :initform ())))
 
+(defclass <dfa-multi-node> ()
+  ((involved-nfa-nodes :initarg :involved-nfa-nodes)))
+
 (defclass <dfa-edge> ()
   ((from-node :initarg :from-node
               :type <dfa-node>)
