@@ -139,11 +139,16 @@ def build_env(args):
             env = VecNormalize(env, use_tf=True)
 
     if args.constraints is not None:
-        assert len(args.constraints) == len(
-            args.reward_shaping)  # should be parallel lists
+        if not args.is_hard:
+            assert args.reward_shaping is not None
+            assert len(args.constraints) == len(
+                args.reward_shaping)  # should be parallel lists
+            reward_shaping = args.reward_shaping
+        else:
+            reward_shaping = [0.] * len(args.constraints)
         constraints = [
-            get_constraint(s)(r)
-            for (s, r) in zip(args.constraints, args.reward_shaping)
+            get_constraint(s)(args.is_hard, r)
+            for (s, r) in zip(args.constraints, reward_shaping)
         ]
         env = ConstraintStepMonitor(
             ConstraintEnv(env,

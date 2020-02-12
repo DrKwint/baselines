@@ -11,12 +11,16 @@ class Constraint(object):
     def __init__(self,
                  name,
                  dfa_string,
-                 violation_reward,
-                 translation_fn):
+                 is_hard,
+                 violation_reward=None,
+                 translation_fn=lambda x: x):
         self.name = name
         self.dfa = DFA.from_string(dfa_string)
+        if not is_hard:
+            assert violation_reward is not None
         self.violation_reward = violation_reward
         self.translation_fn = translation_fn
+        self.is_hard = is_hard
 
     def step(self, obs, action, done):
         is_viol = self.dfa.step(self.translation_fn(obs, action, done))
@@ -33,6 +37,9 @@ class Constraint(object):
     @property
     def num_states(self):
         return len(self.dfa.states)
+
+    def is_violating(self, obs, action, done):
+        return self.dfa.step(self.translation_fn(obs, action, done), hypothetical=True)
 
 class SoftDenseConstraint(Constraint):
     def __init__(self, name, dfa_string, violation_reward, translation_fn, gamma):

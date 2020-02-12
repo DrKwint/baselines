@@ -30,6 +30,8 @@ class ConstraintEnv(gym.Wrapper):
         self.action_history = collections.deque([0] * 10)
         if log_dir is not None:
             self.log_dir = log_dir
+            self.hard_stop_log_dict = dict([(c, LogBuffer(1024, (), dtype=np.bool))
+                                       for c in constraints])
             self.viol_log_dict = dict([(c, LogBuffer(1024, (), dtype=np.bool))
                                        for c in constraints])
             self.state_log_dict = dict([(c, LogBuffer(1024, (), dtype=np.int32))
@@ -53,8 +55,12 @@ class ConstraintEnv(gym.Wrapper):
     def reset(self, **kwargs):
         [c.reset() for c in self.constraints]
         [
+            log.save(os.path.join(self.log_dir, c.name + '_hard_stops'))
+            for (c, log) in self.viol_log_dict.items() if c.is_hard == True
+        ]
+        [
             log.save(os.path.join(self.log_dir, c.name + '_viols'))
-            for (c, log) in self.viol_log_dict.items()
+            for (c, log) in self.viol_log_dict.items() if c.is_hard == False
         ]
         [
             log.save(os.path.join(self.log_dir, c.name + '_state'))
@@ -62,7 +68,7 @@ class ConstraintEnv(gym.Wrapper):
         ]
         [
             log.save(os.path.join(self.log_dir, c.name + '_rew_mod'))
-            for (c, log) in self.rew_mod_log_dict.items()
+            for (c, log) in self.rew_mod_log_dict.items() if c.is_hard == False
         ]
         ob = self.env.reset(**kwargs)
         ob = self.augment_obs(ob)
@@ -70,6 +76,7 @@ class ConstraintEnv(gym.Wrapper):
         return ob
 
     def step(self, action):
+        # assumes that action is pre-filtered using the hard constraints
         ob, rew, done, info = self.env.step(action)
         info['raw_reward'] = rew
         if type(action) is np.ndarray:

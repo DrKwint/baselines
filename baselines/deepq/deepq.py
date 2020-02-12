@@ -1,5 +1,6 @@
 import os
 import tempfile
+from functools import reduce
 
 import tensorflow as tf
 import zipfile
@@ -197,6 +198,10 @@ def learn(env,
     set_global_seeds(seed)
 
     constraints, aug_type = find_constraints(env)
+    if constraints is not None:
+        hard_constraints = [c for c in constraints if c.is_hard]
+    else:
+        hard_constraints = []
     q_func = build_q_func(network, **network_kwargs)
 
     # capture the shape outside the closure so that the env object is not serialized
@@ -281,6 +286,10 @@ def learn(env,
                 if callback(locals(), globals()):
                     break
             # Take action and update exploration to the newest value
+            if hard_constraints:
+                constraint_mask = reduce(lambda x, y: x + y, [c.violating_mask(env.action_space.n) for c in hard_constraints])
+            else:
+                constraint_mask = np.zeros([env.action_space.n])
             kwargs = {}
             if not param_noise:
                 update_eps = exploration.value(t)
@@ -297,7 +306,7 @@ def learn(env,
                 kwargs[
                     'update_param_noise_threshold'] = update_param_noise_threshold
                 kwargs['update_param_noise_scale'] = True
-            action = act(np.array(obs)[None], update_eps=update_eps,
+            action = act(np.array(obs)[None], update_eps=update_eps, hard_constraint_mask=constraint_mask,
                          **kwargs)[0]
             env_action = action
             reset = False

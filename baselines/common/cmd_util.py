@@ -242,6 +242,7 @@ def common_arg_parser():
                         type=str)
     parser.add_argument('--play', default=False, action='store_true')
     parser.add_argument('--constraints', type=str, nargs='+', default=None)
+    parser.add_argument('--is_hard', action='store_true')
     parser.add_argument('--reward_shaping',
                         type=float,
                         nargs='+',
