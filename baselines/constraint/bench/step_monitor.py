@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import atexit
 
 from gym.core import Wrapper
 
@@ -39,6 +40,8 @@ class ConstraintStepMonitor(Wrapper):
         self.reward_log = LogBuffer(initial_log_size, (), dtype=np.float32)
         self.raw_reward_log = LogBuffer(initial_log_size, (), dtype=np.float32)
         self.done_log = LogBuffer(initial_log_size, (), dtype=np.int32)
+        self.reset_counter = 0
+        atexit.register(self.save)
 
     def step(self, action):
         ob, rew, done, info = self.env.step(action)
@@ -54,13 +57,16 @@ class ConstraintStepMonitor(Wrapper):
                 self.log_size, act.shape, dtype=np.int32)
         act_ns = self.action_log.log(act)
         rew_ns = self.reward_log.log(rew)
-        raw_rew_ns = self.raw_reward_log.log(info['raw_reward'])
+        _ = self.raw_reward_log.log(info['raw_reward'])
         don_ns = self.done_log.log(done)
         # assert that the logs are staying in step
         assert act_ns == rew_ns
         assert act_ns == don_ns
 
-        if done: self.save()
+        if done:
+            self.reset_counter += 1
+            if self.reset_counter % 1000 == 0:
+                self.save()
 
     def save(self):
         self.action_log.save(os.path.join(self.filename, 'action'))

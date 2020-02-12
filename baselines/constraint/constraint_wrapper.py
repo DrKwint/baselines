@@ -1,12 +1,13 @@
+import atexit
+import collections
 import os
 
+import gym
 import numpy as np
+from gym.spaces.box import Box
 
 import baselines.constraint
-import gym
 from baselines.constraint.bench.step_monitor import LogBuffer
-import collections
-from gym.spaces.box import Box
 
 
 class ConstraintEnv(gym.Wrapper):
@@ -40,6 +41,7 @@ class ConstraintEnv(gym.Wrapper):
         else:
             self.logs = None
         self.reset_counter = 0
+        atexit.register(self.save)
 
     def augment_obs(self, ob):
         if self.augmentation_type == 'constraint_state_concat':
@@ -51,22 +53,25 @@ class ConstraintEnv(gym.Wrapper):
             ob = (ob, np.array(self.action_history))
         return ob
 
+    def save(self):
+        [
+            log.save(os.path.join(self.log_dir, c.name + '_viols'))
+            for (c, log) in self.viol_log_dict.items() if c.is_hard == False
+        ]
+        [
+            log.save(os.path.join(self.log_dir, c.name + '_state'))
+            for (c, log) in self.state_log_dict.items()
+        ]
+        [
+            log.save(os.path.join(self.log_dir, c.name + '_rew_mod'))
+            for (c, log) in self.rew_mod_log_dict.items() if c.is_hard == False
+        ]
+
     def reset(self, **kwargs):
         [c.reset() for c in self.constraints]
         self.reset_counter += 1
-        if self.reset_counter % 100 == 0:
-            [
-                log.save(os.path.join(self.log_dir, c.name + '_viols'))
-                for (c, log) in self.viol_log_dict.items() if c.is_hard == False
-            ]
-            [
-                log.save(os.path.join(self.log_dir, c.name + '_state'))
-                for (c, log) in self.state_log_dict.items()
-            ]
-            [
-                log.save(os.path.join(self.log_dir, c.name + '_rew_mod'))
-                for (c, log) in self.rew_mod_log_dict.items() if c.is_hard == False
-            ]
+        if self.reset_counter % 1000 == 0:
+            self.save()
         ob = self.env.reset(**kwargs)
         ob = self.augment_obs(ob)
         self.prev_obs = ob
