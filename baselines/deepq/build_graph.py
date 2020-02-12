@@ -95,6 +95,7 @@ The functions in this file can are used to create the following functions:
 """
 import tensorflow as tf
 import baselines.common.tf_util as U
+import numpy as np
 
 
 def scope_vars(scope, trainable_only=False):
@@ -181,7 +182,13 @@ def build_act(make_obs_ph, q_func, num_actions, scope="deepq", reuse=None):
         eps = tf.get_variable("eps", (), initializer=tf.constant_initializer(0))
 
         q_values = q_func(observations_ph.get(), num_actions, scope="q_func")
-        deterministic_actions = tf.argmax(q_values, axis=1)
+
+        # mask out forbidden actions
+        hard_constraint_mask_ph = tf.placeholder(tf.bool, [num_actions], name="hard_constraint_mask")
+        hard_constraint_mask = -999. * tf.cast(hard_constraint_mask_ph, tf.float32)
+        masked_q_values = q_values + hard_constraint_mask
+
+        deterministic_actions = tf.argmax(masked_q_values, axis=1)
 
         if type(observations_ph.get()) is list:
             batch_size = tf.shape(observations_ph.get()[0])[0]
@@ -193,12 +200,14 @@ def build_act(make_obs_ph, q_func, num_actions, scope="deepq", reuse=None):
 
         output_actions = tf.cond(stochastic_ph, lambda: stochastic_actions, lambda: deterministic_actions)
         update_eps_expr = eps.assign(tf.cond(update_eps_ph >= 0, lambda: update_eps_ph, lambda: eps))
-        _act = U.function(inputs=[observations_ph, stochastic_ph, update_eps_ph],
+        _act = U.function(inputs=[observations_ph, stochastic_ph, update_eps_ph, hard_constraint_mask_ph],
                          outputs=output_actions,
                          givens={update_eps_ph: -1.0, stochastic_ph: True},
                          updates=[update_eps_expr])
-        def act(ob, stochastic=True, update_eps=-1):
-            return _act(ob, stochastic, update_eps)
+        def act(ob, stochastic=True, update_eps=-1, hard_constraint_mask=None):
+            if hard_constraint_mask is None:
+                hard_constraint_mask = np.zeros([num_actions])
+            return _act(ob, stochastic, update_eps, hard_constraint_mask)
         _q = U.function(inputs=[observations_ph], outputs=q_values)
         def q_fn(ob):
             return _q(ob)

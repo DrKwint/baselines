@@ -50,9 +50,11 @@ class DFA(object):
         return DFA(name, alphabet, state_list, start_state, accept_states,
                    transition_list)
 
-    def step(self, token):
+    def step(self, token, hypothetical=False):
         """Steps the internal state with an input token"""
         # Handle the case where the env passes the token in an iterable
+        if hypothetical:
+            save_state = self._current_state
         if hasattr(token, '__iter__'):
             if len(token) > 1:
                 raise Exception()
@@ -61,7 +63,10 @@ class DFA(object):
             self._current_state = self._transitions[self._current_state][token]
         else:
             self._current_state = self._start
-        return self.is_accepting
+        is_accept = self.is_accepting
+        if hypothetical:
+            self._current_state = save_state
+        return is_accept
 
     def reset(self):
         """Reset the internal state to the start state"""
