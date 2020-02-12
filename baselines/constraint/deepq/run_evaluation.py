@@ -103,11 +103,16 @@ def build_env(args):
             env = VecNormalize(env, use_tf=True)
 
     if args.constraints is not None:
-        assert len(args.constraints) == len(
-            args.reward_shaping)  # should be parallel lists
+        if not args.is_hard:
+            assert args.reward_shaping is not None
+            assert len(args.constraints) == len(
+                args.reward_shaping)  # should be parallel lists
+            reward_shaping = args.reward_shaping
+        else:
+            reward_shaping = [0.] * len(args.constraints)
         constraints = [
-            get_constraint(s)(r)
-            for (s, r) in zip(args.constraints, args.reward_shaping)
+            get_constraint(s)(args.is_hard, r)
+            for (s, r) in zip(args.constraints, reward_shaping)
         ]
         env = ConstraintStepMonitor(
             ConstraintEnv(env,
@@ -233,7 +238,9 @@ def main(args):
         else:
             constraint_states = []
     else:
-        states = np.zeros((int(args.num_timesteps),) + env.observation_space.shape)
+        print(extra_args)
+        if 'collect_states' in extra_args:
+            states = np.zeros((int(args.num_timesteps),) + env.observation_space.shape)
         constraint_states = []
         episode_rewards = []
 
@@ -252,11 +259,12 @@ def main(args):
                 actions, _, _, _ = model.step(obs)
 
             obs, rew, done, _ = env.step(actions)
-            if type(obs) is tuple: # with augmentation
-                states[i] = obs[0]
-                constraint_states.append(obs[1])
-            else: # without aug
-                states[i] = obs
+            if 'collect_states' in extra_args:
+                if type(obs) is tuple: # with augmentation
+                    states[i] = obs[0]
+                    constraint_states.append(obs[1])
+                else: # without aug
+                    states[i] = obs
             episode_rew += rew
             done_any = done.any() if isinstance(done, np.ndarray) else done
             if done_any:
@@ -266,19 +274,21 @@ def main(args):
                 env.reset()
 
         np.save(osp.join(logger.get_dir(), 'episode_rewards'), episode_rewards)
-        np.save(osp.join(logger.get_dir(), 'states'), states)
+        if 'collect_states' in extra_args:
+            np.save(osp.join(logger.get_dir(), 'states'), states)
         if len(constraint_states) > 0:
             np.save(osp.join(logger.get_dir(), 'constraint_states'), np.array(constraint_states))
         env.close()
 
     # calculate q values
-    for i, s in enumerate(states):
-        if len(constraint_states) > 0: # with augmentation
-            q_input = [(s, constraint_states[i])]
-        else:
-            q_input = s
-        q_vals[i] = model.q(q_input)
-    np.save(osp.join(logger.get_dir(), 'q_vals'), q_vals)
+    if 'collect_states' in extra_args:
+        for i, s in enumerate(states):
+            if len(constraint_states) > 0: # with augmentation
+                q_input = [(s, constraint_states[i])]
+            else:
+                q_input = s
+            q_vals[i] = model.q(q_input)
+        np.save(osp.join(logger.get_dir(), 'q_vals'), q_vals)
 
     shutil.copyfile(osp.join(logger.get_dir(), 'log.txt'), osp.join(logger.get_dir(), 'final_log.txt'))
 
