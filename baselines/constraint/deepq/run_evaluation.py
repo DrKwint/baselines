@@ -68,7 +68,7 @@ def build_env(args):
             env = make_env(env_id,
                            env_type,
                            seed=seed,
-                           wrapper_kwargs={'frame_stack': True}, logger_dir=logger.get_dir())
+                           wrapper_kwargs={'frame_stack': True, 'clip_rewards':False}, logger_dir=logger.get_dir())
         elif alg == 'trpo_mpi':
             if args.augmentation is not None:
                 args.augmentation += '_not_implemented'

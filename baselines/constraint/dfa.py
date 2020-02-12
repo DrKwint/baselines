@@ -91,10 +91,12 @@ class DFA(object):
         """Returns the set of valid input tokens"""
         return self._alphabet
 
+    @property
     def violating_inputs(self):  # -> set(int)
         """Returns the set of input tokens which would move the state to an accepting one"""
         return self._violators[self._current_state]
 
+    @property
     def is_accepting(self):
         """Returns whether or not the DFA is currently in an accept state"""
         return self._current_state in self._accepts
