@@ -30,8 +30,6 @@ class ConstraintEnv(gym.Wrapper):
         self.action_history = collections.deque([0] * 10)
         if log_dir is not None:
             self.log_dir = log_dir
-            self.hard_stop_log_dict = dict([(c, LogBuffer(1024, (), dtype=np.bool))
-                                       for c in constraints])
             self.viol_log_dict = dict([(c, LogBuffer(1024, (), dtype=np.bool))
                                        for c in constraints])
             self.state_log_dict = dict([(c, LogBuffer(1024, (), dtype=np.int32))
@@ -41,6 +39,7 @@ class ConstraintEnv(gym.Wrapper):
             ])
         else:
             self.logs = None
+        self.reset_counter = 0
 
     def augment_obs(self, ob):
         if self.augmentation_type == 'constraint_state_concat':
@@ -54,22 +53,20 @@ class ConstraintEnv(gym.Wrapper):
 
     def reset(self, **kwargs):
         [c.reset() for c in self.constraints]
-        [
-            log.save(os.path.join(self.log_dir, c.name + '_hard_stops'))
-            for (c, log) in self.viol_log_dict.items() if c.is_hard == True
-        ]
-        [
-            log.save(os.path.join(self.log_dir, c.name + '_viols'))
-            for (c, log) in self.viol_log_dict.items() if c.is_hard == False
-        ]
-        [
-            log.save(os.path.join(self.log_dir, c.name + '_state'))
-            for (c, log) in self.state_log_dict.items()
-        ]
-        [
-            log.save(os.path.join(self.log_dir, c.name + '_rew_mod'))
-            for (c, log) in self.rew_mod_log_dict.items() if c.is_hard == False
-        ]
+        self.reset_counter += 1
+        if self.reset_counter % 100 == 0:
+            [
+                log.save(os.path.join(self.log_dir, c.name + '_viols'))
+                for (c, log) in self.viol_log_dict.items() if c.is_hard == False
+            ]
+            [
+                log.save(os.path.join(self.log_dir, c.name + '_state'))
+                for (c, log) in self.state_log_dict.items()
+            ]
+            [
+                log.save(os.path.join(self.log_dir, c.name + '_rew_mod'))
+                for (c, log) in self.rew_mod_log_dict.items() if c.is_hard == False
+            ]
         ob = self.env.reset(**kwargs)
         ob = self.augment_obs(ob)
         self.prev_obs = ob
