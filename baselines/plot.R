@@ -1,3 +1,6 @@
+#!/usr/bin/env Rscript
+
+library("optparse")
 library("tidyverse")
 library("munsell")
 library("RcppCNPy")
