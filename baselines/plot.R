@@ -22,4 +22,5 @@ library("RcppCNPy")
 ## Paramaterized Plotting
 
 ## Handle Loading/Producing Files
-### Maybe argument parsing?
+
+## Argument Parsing
