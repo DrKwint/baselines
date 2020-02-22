@@ -125,6 +125,7 @@ def learn(env,
           callback=None,
           load_path=None,
           action_history_len=10,
+          embed_constraint_state=True,
           **network_kwargs):
     """Train a deepq model.
 
@@ -202,7 +203,7 @@ def learn(env,
         hard_constraints = [c for c in constraints if c.is_hard]
     else:
         hard_constraints = []
-    q_func = build_q_func(network, **network_kwargs)
+    q_func = build_q_func(network, embed_constraint_state=embed_constraint_state, **network_kwargs)
 
     # capture the shape outside the closure so that the env object is not serialized
     # by cloudpickle when serializing make_obs_ph
