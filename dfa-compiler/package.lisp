@@ -23,6 +23,8 @@
   (:use #:cl
         #:utils
         #:regexp)
+  (:import-from #:alexandria
+                #:symbolicate)
   (:nicknames #:nfa)
   (:export #:<nfa-node>
            #:edges-out
@@ -35,7 +37,7 @@
            #:<nfa-epsilon-edge>
            #:<nfa>
            #:start
-           #:accept
+           #:acceptp
            #:nodes
            #:edges
            #:make-re-nfa

@@ -8,7 +8,9 @@
 
 (defclass <nfa-node> ()
   ((label :initarg :label)
-   (edges-out :initform ())))
+   (edges-out :initform ())
+   (acceptp :initarg :acceptp
+            :initform nil)))
 
 (defclass <nfa-edge> ()
   ((from-node :initarg :from-node
@@ -33,9 +35,6 @@
   ((start :initform (make-instance '<nfa-node>)
           :initarg :start-node
           :type <nfa-node>)
-   (accept :initform (make-instance '<nfa-node>)
-           :initarg :end-node
-           :type <nfa-node>)
    (nodes :initform ()
           :type list)
    (edges :initarg :edges
@@ -44,9 +43,8 @@
 
 (defmethod initialize-instance :after ((nfa <nfa>) &rest initargs &key &allow-other-keys)
   (declare (ignorable initargs))
-  (with-slots (start accept nodes edges) nfa
+  (with-slots (start nodes edges) nfa
     (pushnew start nodes :test #'equal)
-    (pushnew accept nodes :test #'equal)
     (dolist (edge edges)
       (with-slots (from-node to-node) edge
         (pushnew from-node nodes :test #'equal)
@@ -54,29 +52,31 @@
 
 (defun make-re-nfa (regexp)
   (let* ((start-node (make-instance '<nfa-node>))
-         (accept-node (make-instance '<nfa-node>))
+         (accept-node (make-instance '<nfa-node> :acceptp t))
          (edge (make-instance '<nfa-re-edge>
                               :from-node start-node
                               :to-node accept-node
                               :regexp regexp)))
     (make-instance '<nfa>
                    :start-node start-node
-                   :end-node accept-node
                    :edges (list edge))))
 
 (defun label-nodes (nfa)
   (let ((q (list (slot-value nfa 'start)))
         (counter 0))
-    (setf (slot-value (slot-value nfa 'accept) 'label) 'accept)
     (do () ((null q))
       (let ((current (car (last q))))
         (setf q (butlast q))
-        (with-slots (label edges-out) current
-          (setf label (incf counter))
-          (dolist (edge edges-out)
-            (with-slots (to-node) edge
-              (unless (slot-boundp to-node 'label)
-                (pushnew to-node q :test #'equal)))))))))
+        (unless (slot-boundp current 'label)
+          (with-slots (label edges-out acceptp) current
+            (if acceptp
+                (setf label (symbolicate 'accept_
+                                         (format nil "~a" (incf counter))))
+                (setf label (incf counter)))
+            (dolist (edge edges-out)
+              (with-slots (to-node) edge
+                (unless (slot-boundp to-node 'label)
+                  (pushnew to-node q :test #'equal))))))))))
 
 (defun nfa-to-dot (filename nfa)
   (with-open-file (stream filename :direction :output
