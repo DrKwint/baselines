@@ -48,6 +48,8 @@
   (:use #:cl
         #:utils
         #:nfa)
+  (:import-from #:alexandria
+                #:symbolicate)
   (:nicknames #:dfa)
   (:export #:<dfa-node>
            #:<dfa-multi-node>

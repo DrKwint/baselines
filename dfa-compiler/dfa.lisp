@@ -43,4 +43,21 @@
         (pushnew from-node nodes :test #'equal)
         (pushnew to-node nodes :test #'equal)))))
 
+(defun label-nodes (dfa)
+  (let ((q (list (slot-value dfa 'start)))
+        (counter 0))
+    (do () ((null q))
+      (let ((current (car (last q))))
+        (setf q (butlast q))
+        (unless (slot-boundp current 'label)
+          (with-slots (label edges-out acceptp) current
+            (if acceptp
+                (setf label (symbolicate 'accept_
+                                         (format nil "~a" (incf counter))))
+                (setf label (incf counter)))))
+        (dolist (edge (slot-value current 'edges-out))
+          (with-slots (to-node) edge
+            (unless (slot-boundp to-node 'label)
+              (pushnew to-node q :test #'equal))))))))
+
 ;;; End dfa
