@@ -34,5 +34,13 @@
           :type list
           :initform ())))
 
+(defmethod initialize-instance :after ((dfa <dfa>) &rest initargs &key &allow-other-keys)
+  (declare (ignorable initargs))
+  (with-slots (start nodes edges) dfa
+    (pushnew start nodes :test #'equal)
+    (dolist (edge edges)
+      (with-slots (from-node to-node) edge
+        (pushnew from-node nodes :test #'equal)
+        (pushnew to-node nodes :test #'equal)))))
 
 ;;; End dfa
