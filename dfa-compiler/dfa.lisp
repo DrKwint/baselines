@@ -43,6 +43,10 @@
         (pushnew from-node nodes :test #'equal)
         (pushnew to-node nodes :test #'equal)))))
 
+(defmethod dfa-regular-nodes ((dfa <dfa>))
+  (dolist (node (slot-value dfa 'nodes))
+    (change-class node '<dfa-node>)))
+
 (defun label-nodes (dfa)
   (let ((q (list (slot-value dfa 'start)))
         (counter 0))
