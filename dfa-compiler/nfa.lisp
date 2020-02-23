@@ -72,11 +72,11 @@
             (if acceptp
                 (setf label (symbolicate 'accept_
                                          (format nil "~a" (incf counter))))
-                (setf label (incf counter)))
-            (dolist (edge edges-out)
-              (with-slots (to-node) edge
-                (unless (slot-boundp to-node 'label)
-                  (pushnew to-node q :test #'equal))))))))))
+                (setf label (incf counter)))))
+        (dolist (edge (slot-value current 'edges-out))
+          (with-slots (to-node) edge
+            (unless (slot-boundp to-node 'label)
+              (pushnew to-node q :test #'equal))))))))
 
 (defun nfa-to-dot (filename nfa)
   (with-open-file (stream filename :direction :output
