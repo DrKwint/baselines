@@ -8,7 +8,9 @@
 
 (defclass <dfa-node> ()
   ((label :initarg :label)
-   (edges-out :initform ())))
+   (edges-out :initform ())
+   (acceptp :initarg :acceptp
+            :initform nil)))
 
 (defclass <dfa-multi-node> ()
   ((involved-nfa-nodes :initarg :involved-nfa-nodes)))
@@ -25,8 +27,6 @@
 (defclass <dfa> ()
   ((start :initarg :start
           :type <dfa-node>)
-   (accept :initarg :accept
-           :type <dfa-node>)
    (nodes :initarg :nodes
           :type list
           :initform ())
