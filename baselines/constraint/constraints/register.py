@@ -87,6 +87,27 @@ def oned_actuation_spaceinvaders4(is_hard, reward_shaping):
                       reward_shaping,
                       translation_fn=translation_fn)
 
+@register("2d_actuation4_Seaquest")
+def twod_actuation4_seaquest(is_hard, reward_shaping):
+    with open("./baselines/constraint/constraints/seaquest_actuation.lisp"
+            ) as dfa_file:
+        dfa_string = dfa_file.read()
+    return Constraint('2d_actuation4_Seaquest',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn=lambda obs, action, done: action)
+
+@register("2d_dithering4_Seaquest")
+def twod_dithering4_seaquest(is_hard, reward_shaping):
+    with open("./baselines/constraint/constraints/seaquest_dithering.lisp"
+            ) as dfa_file:
+        dfa_string = dfa_file.read()
+    return Constraint('2d_dithering4_Seaquest',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn=lambda obs, action, done: action)
 
 @register('1d_actuation_dense')
 def one_d_actuation_dense(is_hard, reward_shaping):
