@@ -147,7 +147,7 @@ def build_env(args):
         else:
             reward_shaping = [0.] * len(args.constraints)
         constraints = [
-            get_constraint(s)(args.is_hard, r)
+            get_constraint(s)(args.is_hard, args.is_dense, r)
             for (s, r) in zip(args.constraints, reward_shaping)
         ]
         env = ConstraintStepMonitor(

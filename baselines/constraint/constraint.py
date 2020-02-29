@@ -43,7 +43,7 @@ class Constraint(object):
 
 class SoftDenseConstraint(Constraint):
     def __init__(self, name, dfa_string, violation_reward, translation_fn, gamma):
-        super(SoftDenseConstraint, self).__init__(name, dfa_string, violation_reward, translation_fn)
+        super(SoftDenseConstraint, self).__init__(name, dfa_string, False, violation_reward, translation_fn)
         self.gamma = gamma
         # counters for tracking value of each DFA state
         self.prev_state = self.current_state
