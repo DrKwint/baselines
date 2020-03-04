@@ -41,6 +41,9 @@ class Constraint(object):
     def is_violating(self, obs, action, done):
         return self.dfa.step(self.translation_fn(obs, action, done), hypothetical=True)
 
+    def violating_mask(self, num_actions):
+        return tf.one_hot(self.dfa.violating_inputs, num_actions)
+
 class SoftDenseConstraint(Constraint):
     def __init__(self, name, dfa_string, violation_reward, translation_fn, gamma):
         super(SoftDenseConstraint, self).__init__(name, dfa_string, False, violation_reward, translation_fn)
