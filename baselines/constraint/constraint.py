@@ -13,17 +13,23 @@ class Constraint(object):
                  dfa_string,
                  is_hard,
                  violation_reward=None,
-                 translation_fn=lambda x: x):
+                 translation_fn=lambda x: x,
+                 inv_translation_fn=None):
         self.name = name
         self.dfa = DFA.from_string(dfa_string)
-        if not is_hard:
+        if is_hard:
+            assert inv_translation_fn is not None
+        else:
             assert violation_reward is not None
         self.violation_reward = violation_reward
         self.translation_fn = translation_fn
         self.is_hard = is_hard
+        self.inv_translation_fn = inv_translation_fn
 
     def step(self, obs, action, done):
         is_viol = self.dfa.step(self.translation_fn(obs, action, done))
+        if is_viol and self.is_hard:
+            raise Exception('Hard violation')
         rew_mod = self.violation_reward if is_viol else 0.
         return is_viol, rew_mod
 
@@ -39,10 +45,15 @@ class Constraint(object):
         return len(self.dfa.states)
 
     def is_violating(self, obs, action, done):
+        print('token', )
         return self.dfa.step(self.translation_fn(obs, action, done), hypothetical=True)
 
     def violating_mask(self, num_actions):
-        return tf.one_hot(self.dfa.violating_inputs, num_actions)
+        mask = np.zeros(num_actions)
+        for v in self.dfa.violating_inputs:
+            for i in self.inv_translation_fn(v):
+                mask += np.eye(num_actions)[i]
+        return mask
 
 class SoftDenseConstraint(Constraint):
     def __init__(self, name, dfa_string, violation_reward, translation_fn, gamma):

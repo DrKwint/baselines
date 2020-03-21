@@ -23,7 +23,7 @@ def one_d_dithering_breakout(is_hard, is_dense, reward_shaping, k=2):
         return SoftDenseConstraint('1d_dithering2_dense_Breakout', dfa_string, reward_shaping,
                       lambda obs, action, done: action, gamma=0.99)
     return Constraint('1d_dithering2_Breakout', dfa_string, is_hard, reward_shaping,
-                      lambda obs, action, done: action)
+                      lambda obs, action, done: action, inv_translation_fn=lambda token: [token])
 
 
 @register('1d_dithering2_SpaceInvaders')
@@ -32,12 +32,14 @@ def one_d_dithering_spaceinvaders(is_hard, is_dense, reward_shaping, k=2):
               ) as dfa_file:
         dfa_string = dfa_file.read()
     translation_dict = dict([(0, 1), (1, 1), (2, 2), (3, 3), (4, 2), (5, 3)])
+    inv_translation_dict = {1: [0, 1], 2: [2, 4], 3: [3, 5]}
     translation_fn = lambda obs, action, done: translation_dict[action]
+    inv_translation_fn = lambda token: inv_translation_dict[token]
     if is_dense:
         return SoftDenseConstraint('1d_dithering2_dense_Breakout', dfa_string, reward_shaping,
                       lambda obs, action, done: action, gamma=.99)
     return Constraint('1d_dithering2_SpaceInvaders', dfa_string, is_hard, reward_shaping,
-                      translation_fn)
+                      translation_fn, inv_translation_fn=inv_translation_fn)
 
 
 def build_one_d_actuation(num_actions, k):
@@ -85,13 +87,15 @@ def oned_actuation_breakout4(is_hard, is_dense, reward_shaping):
                       build_one_d_actuation(4, k=4),
                       is_hard,
                       reward_shaping,
-                      translation_fn=lambda obs, action, done: action)
+                      translation_fn=lambda obs, action, done: action, inv_translation_fn=lambda token: [token])
 
 
 @register('1d_actuation4_SpaceInvaders')
 def oned_actuation_spaceinvaders4(is_hard, is_dense, reward_shaping):
     translation_dict = dict([(0, 0), (1, 1), (2, 2), (3, 3), (4, 2), (5, 3)])
+    inv_translation_dict = {0: [0], 1: [1], 2: [2, 4], 3: [3, 5]}
     translation_fn = lambda obs, action, done: translation_dict[action]
+    inv_translation_fn = lambda token: inv_translation_dict[token]
     if is_dense:
         return SoftDenseConstraint('1d_actuation_dense_SpaceInvaders',
                       build_one_d_actuation(4, k=4),
@@ -101,7 +105,7 @@ def oned_actuation_spaceinvaders4(is_hard, is_dense, reward_shaping):
                       build_one_d_actuation(4, k=4),
                       is_hard,
                       reward_shaping,
-                      translation_fn=translation_fn)
+                      translation_fn=translation_fn, inv_translation_fn=inv_translation_fn)
 
 @register("2d_actuation4_Seaquest")
 def twod_actuation4_seaquest(is_hard, is_dense, reward_shaping):
@@ -117,7 +121,7 @@ def twod_actuation4_seaquest(is_hard, is_dense, reward_shaping):
                       dfa_string,
                       is_hard,
                       reward_shaping,
-                      translation_fn=lambda obs, action, done: action)
+                      translation_fn=lambda obs, action, done: action, inv_translation_fn=lambda token: [token])
 
 @register("2d_dithering4_Seaquest")
 def twod_dithering4_seaquest(is_hard, is_dense, reward_shaping):
@@ -133,7 +137,7 @@ def twod_dithering4_seaquest(is_hard, is_dense, reward_shaping):
                       dfa_string,
                       is_hard,
                       reward_shaping,
-                      translation_fn=lambda obs, action, done: action)
+                      translation_fn=lambda obs, action, done: action, inv_translation_fn=lambda token: [token])
 
 
 # see below for registration
