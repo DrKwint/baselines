@@ -15,7 +15,6 @@ from baselines.common.tf_util import get_session
 from baselines.constraint import ConstraintStepMonitor, ConstraintEnv, get_constraint
 from baselines import logger
 from importlib import import_module
-import gym_sokoban
 
 try:
     from mpi4py import MPI
@@ -111,7 +110,7 @@ def build_env(args):
         else:
             reward_shaping = [0.] * len(args.constraints)
         constraints = [
-            get_constraint(s)(args.is_hard, r)
+            get_constraint(s)(args.is_hard, args.is_dense, r)
             for (s, r) in zip(args.constraints, reward_shaping)
         ]
         env = ConstraintStepMonitor(

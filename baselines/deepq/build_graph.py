@@ -207,7 +207,14 @@ def build_act(make_obs_ph, q_func, num_actions, scope="deepq", reuse=None):
         def act(ob, stochastic=True, update_eps=-1, hard_constraint_mask=None):
             if hard_constraint_mask is None:
                 hard_constraint_mask = np.zeros([num_actions])
-            return _act(ob, stochastic, update_eps, hard_constraint_mask)
+                return _act(ob, stochastic, update_eps, hard_constraint_mask)
+            else:
+                actions = _act(ob, stochastic, update_eps, hard_constraint_mask)
+                while np.any(np.eye(num_actions)[actions] * hard_constraint_mask):
+                    actions[0] = actions[0] + 1
+                    if actions[0] - num_actions >= 0:
+                        actions[0] = actions[0] - num_actions
+                return actions
         _q = U.function(inputs=[observations_ph], outputs=q_values)
         def q_fn(ob):
             return _q(ob)

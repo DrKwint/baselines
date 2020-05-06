@@ -15,23 +15,31 @@ def register(name):
 
 
 @register('1d_dithering2_Breakout')
-def one_d_dithering_breakout(is_hard, reward_shaping, k=2):
+def one_d_dithering_breakout(is_hard, is_dense, reward_shaping, k=2):
     with open("./baselines/constraint/constraints/1d_dithering.lisp"
               ) as dfa_file:
         dfa_string = dfa_file.read()
+    if is_dense:
+        return SoftDenseConstraint('1d_dithering2_dense_Breakout', dfa_string, reward_shaping,
+                      lambda obs, action, done: action, gamma=0.99)
     return Constraint('1d_dithering2_Breakout', dfa_string, is_hard, reward_shaping,
-                      lambda obs, action, done: action)
+                      lambda obs, action, done: action, inv_translation_fn=lambda token: [token])
 
 
 @register('1d_dithering2_SpaceInvaders')
-def one_d_dithering_spaceinvaders(is_hard, reward_shaping, k=2):
+def one_d_dithering_spaceinvaders(is_hard, is_dense, reward_shaping, k=2):
     with open("./baselines/constraint/constraints/1d_dithering.lisp"
               ) as dfa_file:
         dfa_string = dfa_file.read()
     translation_dict = dict([(0, 1), (1, 1), (2, 2), (3, 3), (4, 2), (5, 3)])
+    inv_translation_dict = {1: [0, 1], 2: [2, 4], 3: [3, 5]}
     translation_fn = lambda obs, action, done: translation_dict[action]
+    inv_translation_fn = lambda token: inv_translation_dict[token]
+    if is_dense:
+        return SoftDenseConstraint('1d_dithering2_dense_Breakout', dfa_string, reward_shaping,
+                      lambda obs, action, done: action, gamma=.99)
     return Constraint('1d_dithering2_SpaceInvaders', dfa_string, is_hard, reward_shaping,
-                      translation_fn)
+                      translation_fn, inv_translation_fn=inv_translation_fn)
 
 
 def build_one_d_actuation(num_actions, k):
@@ -69,43 +77,67 @@ def build_one_d_actuation(num_actions, k):
 
 
 @register('1d_actuation4_Breakout')
-def oned_actuation_breakout4(is_hard, reward_shaping):
+def oned_actuation_breakout4(is_hard, is_dense, reward_shaping):
+    if is_dense:
+        return SoftDenseConstraint('1d_actuation_dense_breakout4',
+                      build_one_d_actuation(4, k=4),
+                      reward_shaping,
+                      translation_fn=lambda obs, action, done: action, gamma=0.99)
     return Constraint('1d_actuation_breakout4',
                       build_one_d_actuation(4, k=4),
                       is_hard,
                       reward_shaping,
-                      translation_fn=lambda obs, action, done: action)
+                      translation_fn=lambda obs, action, done: action, inv_translation_fn=lambda token: [token])
 
 
 @register('1d_actuation4_SpaceInvaders')
-def oned_actuation_spaceinvaders4(is_hard, reward_shaping):
+def oned_actuation_spaceinvaders4(is_hard, is_dense, reward_shaping):
     translation_dict = dict([(0, 0), (1, 1), (2, 2), (3, 3), (4, 2), (5, 3)])
+    inv_translation_dict = {0: [0], 1: [1], 2: [2, 4], 3: [3, 5]}
     translation_fn = lambda obs, action, done: translation_dict[action]
+    inv_translation_fn = lambda token: inv_translation_dict[token]
+    if is_dense:
+        return SoftDenseConstraint('1d_actuation_dense_SpaceInvaders',
+                      build_one_d_actuation(4, k=4),
+                      reward_shaping,
+                      translation_fn=translation_fn, gamma=0.99)
     return Constraint('1d_actuation_SpaceInvaders',
                       build_one_d_actuation(4, k=4),
                       is_hard,
                       reward_shaping,
-                      translation_fn=translation_fn)
+                      translation_fn=translation_fn, inv_translation_fn=inv_translation_fn)
 
-
-@register('1d_actuation_dense')
-def one_d_actuation_dense(is_hard, reward_shaping):
-    ACTUATION1D_REGEX = lambda k: '2{k}|3{k}'.format(k=k)
-    return CountingPotentialConstraint('1d_actuation_dense',
-                                       ACTUATION1D_REGEX(4),
-                                       is_hard,
-                                       reward_shaping,
-                                       gamma=0.99,
-                                       s_active=False)
-
-
-@register('sokoban_idempotent')
-def sokoban_idempotent(reward_shaping):
-    SOKOBAN_REGEX = '0|56|65|78|87|5678|5687|5768|5786|5867|5876|6578|6587|6758|6785|6857|6875|7568|7586|7658|7685|7856|7865|8567|8576|8657|8675|8756|8765'
-    return Constraint('sokoban_idempotent',
-                      SOKOBAN_REGEX,
+@register("2d_actuation4_Seaquest")
+def twod_actuation4_seaquest(is_hard, is_dense, reward_shaping):
+    with open("./baselines/constraint/constraints/seaquest_actuation.lisp"
+            ) as dfa_file:
+        dfa_string = dfa_file.read()
+    if is_dense:
+        return SoftDenseConstraint('2d_actuation4_dense_Seaquest',
+                      dfa_string,
                       reward_shaping,
-                      s_active=False)
+                      translation_fn=lambda obs, action, done: action, gamma=0.99)
+    return Constraint('2d_actuation4_Seaquest',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn=lambda obs, action, done: action, inv_translation_fn=lambda token: [token])
+
+@register("2d_dithering4_Seaquest")
+def twod_dithering4_seaquest(is_hard, is_dense, reward_shaping):
+    with open("./baselines/constraint/constraints/seaquest_dithering.lisp"
+            ) as dfa_file:
+        dfa_string = dfa_file.read()
+    if is_dense:
+        return SoftDenseConstraint('2d_dithering4_dense_Seaquest',
+                      dfa_string,
+                      reward_shaping,
+                      translation_fn=lambda obs, action, done: action, gamma=0.99)
+    return Constraint('2d_dithering4_Seaquest',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn=lambda obs, action, done: action, inv_translation_fn=lambda token: [token])
 
 
 # see below for registration

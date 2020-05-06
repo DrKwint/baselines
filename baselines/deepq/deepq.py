@@ -377,7 +377,7 @@ def learn(env,
 
 def find_constraints(env):
     if hasattr(env, 'constraints'):
-        if env.augmentation_type != None:
+        if env.constraints != None:
             return env.constraints, env.augmentation_type
     elif hasattr(env, 'env'):
         return find_constraints(env.env)
