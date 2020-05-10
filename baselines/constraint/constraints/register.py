@@ -1,7 +1,10 @@
-from baselines.constraint.constraint import Constraint, SoftDenseConstraint
-import itertools
 import functools
+import itertools
+
 import numpy as np
+
+from baselines.common.atari_wrappers import LazyFrames
+from baselines.constraint.constraint import Constraint, SoftDenseConstraint
 
 mapping = {}
 
@@ -29,6 +32,8 @@ def paddle_direction_breakout(is_hard, is_dense, reward_shaping):
         # action 1 is the fire button
         # action 2 goes to the right
         # action 3 goes to the left
+        if not isinstance(obs, LazyFrames):
+            obs = obs[0]
         frames = np.array(obs)
         paddle_line = frames[-7, 5:-5, -1]
         ball_box = frames[38:-9, 5:-5, -1]
