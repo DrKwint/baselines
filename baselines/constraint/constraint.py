@@ -1,4 +1,3 @@
-import itertools
 from collections import Counter
 
 import numpy as np
@@ -27,7 +26,8 @@ class Constraint(object):
         self.inv_translation_fn = inv_translation_fn
 
     def step(self, obs, action, done):
-        is_viol = self.dfa.step(self.translation_fn(obs, action, done))
+        token = self.translation_fn(obs, action, done)
+        is_viol = self.dfa.step(token)
         if is_viol and self.is_hard:
             raise Exception('Hard violation')
         rew_mod = self.violation_reward if is_viol else 0.
@@ -46,7 +46,8 @@ class Constraint(object):
 
     def is_violating(self, obs, action, done):
         print('token', )
-        return self.dfa.step(self.translation_fn(obs, action, done), hypothetical=True)
+        return self.dfa.step(self.translation_fn(obs, action, done),
+                             hypothetical=True)
 
     def violating_mask(self, num_actions):
         mask = np.zeros(num_actions)
@@ -55,9 +56,13 @@ class Constraint(object):
                 mask += np.eye(num_actions)[i]
         return mask
 
+
 class SoftDenseConstraint(Constraint):
-    def __init__(self, name, dfa_string, violation_reward, translation_fn, gamma):
-        super(SoftDenseConstraint, self).__init__(name, dfa_string, False, violation_reward, translation_fn)
+    def __init__(self, name, dfa_string, violation_reward, translation_fn,
+                 gamma):
+        super(SoftDenseConstraint,
+              self).__init__(name, dfa_string, False, violation_reward,
+                             translation_fn)
         self.gamma = gamma
         # counters for tracking value of each DFA state
         self.prev_state = self.current_state

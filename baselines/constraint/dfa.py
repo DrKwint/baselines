@@ -1,5 +1,5 @@
 import sexpdata
-import numpy as np
+from sexpdata import Symbol
 
 
 class DFA(object):
@@ -42,11 +42,14 @@ class DFA(object):
             raise ValueError("dfa_string %s is improperly formatted." %
                              (dfa_string))
         name = data[1].value()
-        alphabet = data[2][0]
-        state_list = data[2][1]
+        clean_symbols = lambda l: [
+            d._val if isinstance(d, Symbol) else d for d in l
+        ]
+        alphabet = clean_symbols(data[2][0])
+        state_list = clean_symbols(data[2][1])
         start_state = data[2][2]
-        accept_states = data[2][3]
-        transition_list = data[3]
+        accept_states = clean_symbols(data[2][3])
+        transition_list = [clean_symbols(d) for d in data[3]]
         return DFA(name, alphabet, state_list, start_state, accept_states,
                    transition_list)
 
