@@ -67,7 +67,11 @@ def build_env(args):
             env = make_env(env_id,
                            env_type,
                            seed=seed,
-                           wrapper_kwargs={'frame_stack': True, 'clip_rewards':False}, logger_dir=logger.get_dir())
+                           wrapper_kwargs={
+                               'frame_stack': True,
+                               'clip_rewards': False
+                           },
+                           logger_dir=logger.get_dir())
         elif alg == 'trpo_mpi':
             if args.augmentation is not None:
                 args.augmentation += '_not_implemented'
@@ -233,13 +237,15 @@ def main(args):
         # TODO: fix by adding loading of constraint state and finding the right files
         states = np.load(osp.join(args.experience_dir, 'states'))
         if file_exists:
-            constraint_states = np.load(osp.join(args.experience_dir, 'constraint_states'))
+            constraint_states = np.load(
+                osp.join(args.experience_dir, 'constraint_states'))
         else:
             constraint_states = []
     else:
         print(extra_args)
         if 'collect_states' in extra_args:
-            states = np.zeros((int(args.num_timesteps),) + env.observation_space.shape)
+            states = np.zeros((int(args.num_timesteps), ) +
+                              env.observation_space.shape)
         constraint_states = []
         episode_rewards = []
 
@@ -247,11 +253,17 @@ def main(args):
         obs = env.reset()
 
         state = model.initial_state if hasattr(model,
-                                                'initial_state') else None
+                                               'initial_state') else None
         dones = np.zeros((1, ))
 
-        episode_rew = np.zeros(env.num_envs) if isinstance(env, VecEnv) else np.zeros(1)
-        for i in range(int(args.num_timesteps)):
+        episode_rew = np.zeros(env.num_envs) if isinstance(
+            env, VecEnv) else np.zeros(1)
+        timestep = 0
+        ready_to_exit = False
+        while True:
+            timestep += 1
+            if timestep >= args.num_timesteps:
+                ready_to_exit = True
             if state is not None:
                 actions, _, state, _ = model.step(obs, S=state, M=dones)
             else:
@@ -259,10 +271,10 @@ def main(args):
 
             obs, rew, done, _ = env.step(actions)
             if 'collect_states' in extra_args:
-                if type(obs) is tuple: # with augmentation
+                if type(obs) is tuple:  # with augmentation
                     states[i] = obs[0]
                     constraint_states.append(obs[1])
-                else: # without aug
+                else:  # without aug
                     states[i] = obs
             episode_rew += rew
             done_any = done.any() if isinstance(done, np.ndarray) else done
@@ -270,26 +282,30 @@ def main(args):
                 for i in np.nonzero(done)[0]:
                     episode_rewards.append(episode_rew[0])
                     episode_rew[i] = 0
+                if ready_to_exit:
+                    break
                 env.reset()
 
         np.save(osp.join(logger.get_dir(), 'episode_rewards'), episode_rewards)
         if 'collect_states' in extra_args:
             np.save(osp.join(logger.get_dir(), 'states'), states)
         if len(constraint_states) > 0:
-            np.save(osp.join(logger.get_dir(), 'constraint_states'), np.array(constraint_states))
+            np.save(osp.join(logger.get_dir(), 'constraint_states'),
+                    np.array(constraint_states))
         env.close()
 
     # calculate q values
     if 'collect_states' in extra_args:
         for i, s in enumerate(states):
-            if len(constraint_states) > 0: # with augmentation
+            if len(constraint_states) > 0:  # with augmentation
                 q_input = [(s, constraint_states[i])]
             else:
                 q_input = s
             q_vals[i] = model.q(q_input)
         np.save(osp.join(logger.get_dir(), 'q_vals'), q_vals)
 
-    shutil.copyfile(osp.join(logger.get_dir(), 'log.txt'), osp.join(logger.get_dir(), 'final_log.txt'))
+    shutil.copyfile(osp.join(logger.get_dir(), 'log.txt'),
+                    osp.join(logger.get_dir(), 'final_log.txt'))
 
 
 if __name__ == '__main__':
