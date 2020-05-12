@@ -7,6 +7,7 @@ from collections import defaultdict
 import tensorflow as tf
 import numpy as np
 import shutil
+from functools import reduce
 
 from baselines.common.vec_env import VecFrameStack, VecNormalize, VecEnv
 from baselines.common.vec_env.vec_video_recorder import VecVideoRecorder
@@ -105,6 +106,7 @@ def build_env(args):
         if env_type == 'mujoco':
             env = VecNormalize(env, use_tf=True)
 
+    constraints = []
     if args.constraints is not None:
         if not args.is_hard:
             assert args.reward_shaping is not None
@@ -123,7 +125,7 @@ def build_env(args):
                           augmentation_type=args.augmentation,
                           log_dir=logger.get_dir()), logger.get_dir())
 
-    return env
+    return env, constraints
 
 
 def get_env_type(args):
@@ -225,7 +227,8 @@ def main(args):
     import json
     with open(osp.join(logger.get_dir(), 'args.json'), 'w') as arg_record_file:
         json.dump(args.__dict__, arg_record_file)
-    env = build_env(args)
+    env, constraints = build_env(args)
+    hard_constraints = [c for c in constraints if c.is_hard]
 
     from baselines.deepq.deepq import ActWrapper
     model = ActWrapper.load_act(args.save_path)
@@ -264,10 +267,19 @@ def main(args):
             timestep += 1
             if timestep >= args.num_timesteps:
                 ready_to_exit = True
-            if state is not None:
-                actions, _, state, _ = model.step(obs, S=state, M=dones)
+
+            if hard_constraints:
+                constraint_mask = reduce(lambda x, y: x + y, [
+                    c.violating_mask(env.action_space.n)
+                    for c in hard_constraints
+                ])
             else:
-                actions, _, _, _ = model.step(obs)
+                constraint_mask = None
+
+            if state is not None:
+                actions, _, state, _ = model.step(obs, S=state, M=dones, hard_constraint_mask=constraint_mask)
+            else:
+                actions, _, _, _ = model.step(obs, hard_constraint_mask=constraint_mask)
 
             obs, rew, done, _ = env.step(actions)
             if 'collect_states' in extra_args:
