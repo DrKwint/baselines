@@ -20,10 +20,11 @@ def register(name):
     return _thunk
 
 
-@register('dodge_bullet_SpaceInvaders')
-def dodge_bullet_spaceinvaders(is_hard, is_dense, reward_shaping):
-    with open("./baselines/constraint/constraints/1d_dithering.lisp"
-              ) as dfa_file:
+@register('dangerzone_SpaceInvaders')
+def dangerzone_spaceinvaders(is_hard, is_dense, reward_shaping):
+    with open(
+            "./baselines/constraint/constraints/spaceinvaders_dangerzone.lisp"
+    ) as dfa_file:
         dfa_string = dfa_file.read()
 
     bullet_detection_baseline = None
@@ -185,12 +186,12 @@ def dodge_bullet_spaceinvaders(is_hard, is_dense, reward_shaping):
         return inv_translation_dict[c]
 
     if is_dense:
-        return SoftDenseConstraint('dodge_bullet_dense_SpaceInvaders',
+        return SoftDenseConstraint('dangerzone_dense_SpaceInvaders',
                                    dfa_string,
                                    reward_shaping,
                                    translation_fn,
                                    gamma=.99)
-    return Constraint('dodge_bullet_SpaceInvaders',
+    return Constraint('dangerzone_SpaceInvaders',
                       dfa_string,
                       is_hard,
                       reward_shaping,
