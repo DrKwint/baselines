@@ -2,6 +2,9 @@ import functools
 import itertools
 
 import numpy as np
+from skimage.feature import match_template
+import skimage
+import math
 
 from baselines.common.atari_wrappers import LazyFrames
 from baselines.constraint.constraint import Constraint, SoftDenseConstraint
@@ -15,6 +18,184 @@ def register(name):
         return func
 
     return _thunk
+
+
+@register('dodge_bullet_SpaceInvaders')
+def dodge_bullet_spaceinvaders(is_hard, is_dense, reward_shaping):
+    with open("./baselines/constraint/constraints/1d_dithering.lisp"
+              ) as dfa_file:
+        dfa_string = dfa_file.read()
+
+    bullet_detection_baseline = None
+    player_detection_baseline = None
+    player_template = np.array([[0, 0, 6, 79, 28, 0, 0],
+                                [0, 0, 30, 98, 67, 0, 0],
+                                [0, 6, 55, 98, 77, 21, 0],
+                                [0, 12, 91, 98, 98, 41, 0]])
+    bullet_template = np.array([[0, 40, 0], [0, 99, 0], [0, 99, 0], [0, 40,
+                                                                     0]])
+    translation_dict = dict([(0, 'a'), (1, 'a'), (2, 'r'), (3, 'l'), (4, 'r'),
+                             (5, 'l')])
+    inv_translation_dict = {'a': [0, 1], 'r': [2, 4], 'l': [3, 5]}
+
+    def token2int(t):
+        act = t[0]
+        if act == 'r':
+            act = 2
+        elif act == 'l':
+            act = 1
+        elif act == 'a':
+            act = 0
+        l = t[2]
+        r = t[4]
+        a = t[6]
+        return 64 * act * 16 * int(r) + 4 * int(l) + int(a)
+
+    def translation_fn(obs, action, done):
+        if not isinstance(obs, LazyFrames):
+            obs = obs[0]
+        frames = np.array(obs)
+        nonlocal bullet_detection_baseline
+        nonlocal player_detection_baseline
+        old_bullet_player_area = frames[45:-5, :, -2]
+        bullet_player_area = frames[45:-5, :, -1]
+
+        old_bullet_conv = match_template(old_bullet_player_area,
+                                         bullet_template,
+                                         pad_input=True)
+        bullet_conv = match_template(bullet_player_area,
+                                     bullet_template,
+                                     pad_input=True)
+        player_conv = match_template(bullet_player_area,
+                                     player_template,
+                                     pad_input=True)
+        if bullet_detection_baseline is None:
+            bullet_detection_baseline = np.max(bullet_conv) + 0.02
+            #print("bullet threshold", bullet_detection_baseline)
+        if player_detection_baseline is None:
+            player_detection_baseline = np.minimum(
+                np.max(player_conv) + 0.02, 0.95)
+            #print("player threshold", player_detection_baseline)
+
+        old_bullet_locs = np.argwhere(
+            old_bullet_conv > bullet_detection_baseline)
+        bullet_locs = np.argwhere(bullet_conv > bullet_detection_baseline)
+        player_locs = np.argwhere(player_conv > player_detection_baseline)
+
+        if done:
+            bullet_detection_baseline = None
+            player_detection_baseline = None
+
+        if len(player_locs) != 1 or len(bullet_locs) == 0:
+            # player is missing or we don't where they are
+            # OR no bullets detected
+            # then the constraint is inactive
+            return 0
+
+        # merge individual points which belong together
+        def merge_bullet_areas(bullet_locs):
+            bullet_areas = [(a, a, b) for a, b in bullet_locs]
+            i = 0
+            while i < len(bullet_areas) - 1:
+                j = i + 1
+                while j < len(bullet_areas):
+                    a, b, c = bullet_areas[i]
+                    d, e, f = bullet_areas[j]
+                    if c == f and (b == d - 1):
+                        bullet_areas[i] = (a, e, c)
+                        del bullet_areas[j]
+                    else:
+                        j += 1
+                i += 1
+            return bullet_areas
+
+        bullet_areas = merge_bullet_areas(bullet_locs)
+        old_bullet_areas = merge_bullet_areas(old_bullet_locs)
+
+        # filter out bullets travelling upwards
+        down_bullets = []
+        for bullet in bullet_areas:
+            a, b, c = bullet
+            for d, e, f in old_bullet_areas:
+                if c == f and d < a and e < b:
+                    down_bullets.append([b, c])
+                    break
+        if len(down_bullets) == 0:
+            return 0
+
+        player_loc = player_locs[0]
+        player_x_line = (player_loc[1] - 3, player_loc[1] + 3)
+        # sort down bullets into lra
+        left = []
+        right = []
+        above = []
+        for bullet in down_bullets:
+            if bullet[1] < player_x_line[0]:
+                left.append(bullet)
+            elif bullet[1] > player_x_line[1]:
+                right.append(bullet)
+            else:
+                above.append(bullet)
+
+        distance = lambda p, b: (b[0] - p[0])**2 + (b[1] - p[1])**2
+        token_str = translation_dict[action]
+
+        if len(left) == 0:
+            token_str += 'l3'
+        else:
+            min_lbullet_distance = min([distance(player_loc, x) for x in left])
+            if min_lbullet_distance < 12:
+                token_str += 'l0'
+            elif min_lbullet_distance < 24:
+                token_str += 'l1'
+            else:
+                token_str += 'l2'
+        if len(right) == 0:
+            token_str += 'r3'
+        else:
+            min_rbullet_distance = min(
+                [distance(player_loc, x) for x in right])
+            if min_rbullet_distance < 12:
+                token_str += 'r0'
+            elif min_rbullet_distance < 24:
+                token_str += 'r1'
+            else:
+                token_str += 'r2'
+        if len(above) == 0:
+            token_str += 'a3'
+        else:
+            min_abullet_distance = min(
+                [distance(player_loc, x) for x in above])
+            if min_abullet_distance < 12:
+                token_str += 'a0'
+            elif min_abullet_distance < 24:
+                token_str += 'a1'
+            else:
+                token_str += 'a2'
+            return token2int(token_str)
+
+    def inv_translation_fn(token):
+        i = token // 64
+        if i == 2:
+            c = 'r'
+        elif i == 1:
+            c = 'l'
+        elif i == 0:
+            c = 'a'
+        return inv_translation_dict[c]
+
+    if is_dense:
+        return SoftDenseConstraint('dodge_bullet_dense_SpaceInvaders',
+                                   dfa_string,
+                                   reward_shaping,
+                                   translation_fn,
+                                   gamma=.99)
+    return Constraint('dodge_bullet_SpaceInvaders',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn,
+                      inv_translation_fn=inv_translation_fn)
 
 
 @register('paddle_ball_distance_Breakout')
@@ -117,7 +298,7 @@ def one_d_dithering_spaceinvaders(is_hard, is_dense, reward_shaping, k=2):
         return SoftDenseConstraint('1d_dithering2_dense_Breakout',
                                    dfa_string,
                                    reward_shaping,
-                                   lambda obs, action, done: action,
+                                   translation_dict,
                                    gamma=.99)
     return Constraint('1d_dithering2_SpaceInvaders',
                       dfa_string,
