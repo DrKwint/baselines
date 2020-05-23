@@ -20,6 +20,158 @@ def register(name):
     return _thunk
 
 
+def seaquest_sub_depth(frame, last_pos=None):
+    # first number vertical, lower is upper
+    # second number horizontal, lower is lefter
+    leftface_sub_template = np.array(
+        [[38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38],
+         [38, 38, 38, 38, 73, 77, 38, 38, 38, 38, 38, 38],
+         [38, 38, 38, 43, 210, 210, 144, 38, 38, 38, 38, 38],
+         [38, 38, 81, 112, 209, 205, 173, 110, 88, 56, 95, 38],
+         [38, 60, 210, 210, 208, 205, 205, 205, 209, 209, 142, 38],
+         [38, 51, 149, 214, 210, 210, 210, 210, 210, 211, 142, 38],
+         [38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38]])
+    rightface_sub_template = np.array([
+        [38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38, 38],
+        [38, 38, 38, 38, 38, 39, 72, 142, 46, 38, 38, 38],
+        [38, 38, 38, 38, 38, 117, 206, 210, 51, 38, 38, 38],
+        [38, 81, 113, 81, 143, 179, 205, 209, 147, 143, 56, 38],
+        [38, 133, 190, 206, 205, 205, 205, 208, 211, 210, 69, 38],
+        [38, 133, 189, 177, 177, 177, 177, 177, 147, 83, 38, 38],
+        [38, 64, 48, 38, 38, 38, 38, 38, 38, 38, 38, 38],
+    ])
+    left_conv = match_template(frame, leftface_sub_template, pad_input=True)
+    right_conv = match_template(frame, rightface_sub_template, pad_input=True)
+    left_pos = np.array(np.argwhere(left_conv == np.max(left_conv))[0])
+    right_pos = np.array(np.argwhere(right_conv == np.max(right_conv))[0])
+    if np.linalg.norm(left_pos - right_pos) < 4:
+        return (left_pos + right_pos) / 2
+    elif last_pos is not None and np.linalg.norm(left_pos - last_pos) < 3:
+        return left_pos
+    elif last_pos is not None and np.linalg.norm(right_pos - last_pos) < 3:
+        return right_pos
+    else:
+        return None
+
+
+@register('oxygen_Seaquest')
+def oxygen_seaquest(is_hard, is_dense, reward_shaping):
+    pass
+
+
+@register('diver_Seaquest')
+def diver_Seaquest(is_hard, is_dense, reward_shaping):
+    with open("./baselines/constraint/constraints/seaquest_diver.lisp"
+              ) as dfa_file:
+        dfa_string = dfa_file.read()
+
+    last_pos = None
+    last_known_pos = None
+    move_dict = {
+        0: 'X',
+        1: 'S',
+        2: 'U',
+        3: 'R',
+        4: 'L',
+        5: 'D',
+        6: 'UR',
+        7: 'UL',
+        8: 'DR',
+        9: 'DL',
+        10: 'US',
+        11: 'RS',
+        12: 'LS',
+        13: 'DS',
+        14: 'URS',
+        15: 'ULS',
+        16: 'DRS',
+        17: 'DLS'
+    }
+    inv_move_dict = {
+        'X': [0],
+        'S': [1, 10, 11, 12, 13, 14, 15, 16, 17],
+        'U': [2, 6, 7, 10, 14, 15],
+        'R': [3, 6, 8, 11, 14, 16],
+        'D': [5, 8, 9, 13, 16, 17],
+        'L': [4, 7, 9, 12, 15, 17]
+    }
+
+    def translation_fn(obs, act, done):
+        threshold = 142.0  # The base value in the section of screen where the divers are.
+        #4x4 kernels that are "center-of-mass" on each diver.
+        #For each frame in the LazyFrame stack (4 total), count the number of divers.
+        if not isinstance(obs, LazyFrames):
+            obs = obs[0]
+        last_frame = np.array(obs)[:, :, -1]
+        nonlocal last_pos, last_known_pos
+        diver_1 = last_frame[72:74, 32:34]
+        diver_2 = last_frame[72:74, 36:38]
+        diver_3 = last_frame[72:74, 40:42]
+        diver_4 = last_frame[72:74, 44:46]
+        diver_5 = last_frame[72:74, 48:50]
+        diver_6 = last_frame[72:74, 52:54]
+        divers = [diver_1, diver_2, diver_3, diver_4, diver_5, diver_6]
+        num_divers = 0
+        for diver in divers:
+            if np.mean(diver) < threshold:
+                num_divers += 1
+        # print("Number of divers: {}".format(num_divers))
+        action_letters = move_dict[act]
+        last_pos = seaquest_sub_depth(last_frame, last_pos)
+        if last_pos is not None:
+            last_known_pos = last_pos
+        return_val = 0
+        if last_pos is None:
+            temp_last_pos = last_known_pos
+        else:
+            temp_last_pos = last_pos
+
+        if temp_last_pos is None or temp_last_pos[0] < 30:
+            return_val += 0
+        elif temp_last_pos[0] > 30 and temp_last_pos[0] < 45:
+            return_val += 6
+        else:
+            return_val += 12
+
+        if num_divers == 0:
+            return_val += 0
+        elif num_divers < 0 and num_divers < 6:
+            return_val += 2
+        else:
+            return_val += 4
+
+        if 'U' not in action_letters:
+            return_val += 0
+        else:
+            return_val += 1
+
+        if done:
+            last_pos = None
+            last_known_pos = None
+
+        return return_val
+
+    def inv_translation_fn(token):
+        # don't go up
+        if token % 2 == 1:
+            return inv_move_dict['U']
+        else:
+            return list(set(range(18)) - set(inv_move_dict['U']))
+
+    if is_dense:
+        return SoftDenseConstraint('diver_dense_SpaceInvaders',
+                                   dfa_string,
+                                   reward_shaping,
+                                   translation_fn,
+                                   gamma=.99)
+    return Constraint('diver_SpaceInvaders',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn,
+                      inv_translation_fn=inv_translation_fn)
+
+
 @register('dangerzone_SpaceInvaders')
 def dangerzone_spaceinvaders(is_hard, is_dense, reward_shaping):
     with open(
@@ -229,6 +381,7 @@ def paddle_direction_breakout(is_hard, is_dense, reward_shaping):
         if not trigger_pulled:
             return 'N'
         try:
+            # we get dim 1 of ball pixels and 0 of paddle pixels, which are both horizontal axis
             ball_x_center = (np.min(ball_pixels[1]) +
                              np.max(ball_pixels[1])) / 2.
             paddle_x_center = (np.min(paddle_pixels[0]) +
