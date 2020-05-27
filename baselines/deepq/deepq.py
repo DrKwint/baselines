@@ -199,6 +199,9 @@ def learn(env,
     set_global_seeds(seed)
 
     constraints, aug_type = find_constraints(env)
+    if aug_type == 'constraint_state_noembed_product':
+        aug_type = 'constraint_state_product'
+        embed_constraint_state = False
     if constraints is not None:
         hard_constraints = [c for c in constraints if c.is_hard]
     else:
