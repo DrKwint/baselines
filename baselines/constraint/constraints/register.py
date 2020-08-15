@@ -573,6 +573,234 @@ def twod_dithering4_seaquest(is_hard, is_dense, reward_shaping):
                       inv_translation_fn=lambda token: [token])
 
 
+@register("proximity_PointGoal1")
+def proximity_point_goal_one(is_hard, is_dense, reward_shaping):
+    with open("./baselines/constraint/constraints/proximity_highres.lisp"
+              ) as dfa_file:
+        dfa_string = dfa_file.read()
+
+    def translation_fn(obs, action, done):
+        token = max(obs['hazards_lidar']) // 0.1
+        return token
+
+    if is_dense:
+        return SoftDenseConstraint('proximity_PointGoal1',
+                                   dfa_string,
+                                   reward_shaping,
+                                   translation_fn=translation_fn,
+                                   gamma=0.99)
+    return Constraint('proximity_PointGoal1',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn=translation_fn,
+                      inv_translation_fn=lambda token: [token])
+
+
+@register("proximity_PointButton1")
+def proximity_point_button_one(is_hard, is_dense, reward_shaping):
+    with open("./baselines/constraint/constraints/proximity_highres.lisp"
+              ) as dfa_file:
+        dfa_string = dfa_file.read()
+
+    def translation_fn(obs, action, done):
+        token = max(obs['hazards_lidar']) // 0.1
+        return token
+
+    if is_dense:
+        return SoftDenseConstraint('proximity_PointButton1',
+                                   dfa_string,
+                                   reward_shaping,
+                                   translation_fn=translation_fn,
+                                   gamma=0.99)
+    return Constraint('proximity_PointButton1',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn=translation_fn,
+                      inv_translation_fn=lambda token: [token])
+
+
+@register("proximity_PointGoal2")
+def proximity_point_goal_two(is_hard, is_dense, reward_shaping):
+    with open("./baselines/constraint/constraints/proximity_highres.lisp"
+              ) as dfa_file:
+        dfa_string = dfa_file.read()
+
+    def translation_fn(obs, action, done):
+        hazards_token = max(obs['hazards_lidar']) // 0.1
+        vases_token = max(obs['vases_lidar']) // 0.1
+        token = max(hazards_token, vases_token)
+        return token
+
+    if is_dense:
+        return SoftDenseConstraint('proximity_PointGoal2',
+                                   dfa_string,
+                                   reward_shaping,
+                                   translation_fn=translation_fn,
+                                   gamma=0.99)
+    return Constraint('proximity_PointGoal2',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn=translation_fn,
+                      inv_translation_fn=lambda token: [token])
+
+
+@register("proximity_PointButton2")
+def proximity_point_button_two(is_hard, is_dense, reward_shaping):
+    with open("./baselines/constraint/constraints/proximity_highres.lisp"
+              ) as dfa_file:
+        dfa_string = dfa_file.read()
+
+    def translation_fn(obs, action, done):
+        hazards_token = max(obs['hazards_lidar']) // 0.1
+        vases_token = max(obs['gremlins_lidar']) // 0.1
+        token = max(hazards_token, vases_token)
+        return token
+
+    if is_dense:
+        return SoftDenseConstraint('proximity_PointButton2',
+                                   dfa_string,
+                                   reward_shaping,
+                                   translation_fn=translation_fn,
+                                   gamma=0.99)
+    return Constraint('proximity_PointButton2',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn=translation_fn,
+                      inv_translation_fn=lambda token: [token])
+
+
+@register("simple_PointGoal1")
+def point_goal_one(is_hard, is_dense, reward_shaping):
+    with open("./baselines/constraint/constraints/proximity.lisp") as dfa_file:
+        dfa_string = dfa_file.read()
+
+    def translation_fn(obs, action, done):
+        vel = np.array(obs['velocimeter'][:-1])
+        angle = np.arctan2(vel[1], vel[0])
+
+        lidar_num_bins = len(obs['hazards_lidar'])
+        bin_size = (np.pi * 2) / lidar_num_bins
+        bin = int(angle / bin_size)
+        token = max(0, (bin - 0.1) // 0.2)
+        return token
+
+    if is_dense:
+        return SoftDenseConstraint('simple_PointGoal1',
+                                   dfa_string,
+                                   reward_shaping,
+                                   translation_fn=translation_fn,
+                                   gamma=0.99)
+    return Constraint('simple_PointGoal1',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn=translation_fn,
+                      inv_translation_fn=lambda token: [token])
+
+
+@register("simple_PointButton1")
+def point_button_one(is_hard, is_dense, reward_shaping):
+    with open("./baselines/constraint/constraints/proximity.lisp") as dfa_file:
+        dfa_string = dfa_file.read()
+
+    def translation_fn(obs, action, done):
+        vel = np.array(obs['velocimeter'][:-1])
+        angle = np.arctan2(vel[1], vel[0])
+
+        lidar_num_bins = len(obs['hazards_lidar'])
+        bin_size = (np.pi * 2) / lidar_num_bins
+        bin = int(angle / bin_size)
+        token = max(0, (bin - 0.1) // 0.2)
+        return token
+
+    if is_dense:
+        return SoftDenseConstraint('simple_PointButton1',
+                                   dfa_string,
+                                   reward_shaping,
+                                   translation_fn=translation_fn,
+                                   gamma=0.99)
+    return Constraint('simple_PointButton1',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn=translation_fn,
+                      inv_translation_fn=lambda token: [token])
+
+
+@register("simple_PointGoal2")
+def point_goal_two(is_hard, is_dense, reward_shaping):
+    with open("./baselines/constraint/constraints/proximity.lisp") as dfa_file:
+        dfa_string = dfa_file.read()
+
+    def translation_fn(obs, action, done):
+        vel = np.array(obs['velocimeter'][:-1])
+        angle = np.arctan2(vel[1], vel[0])
+
+        hazards_lidar_num_bins = len(obs['hazards_lidar'])
+        hazards_bin_size = (np.pi * 2) / hazards_lidar_num_bins
+        hazards_bin = int(angle / hazards_bin_size)
+        hazards_token = max(0, (hazards_bin - 0.1) // 0.2)
+        vases_lidar_num_bins = len(obs['vases_lidar'])
+        vases_bin_size = (np.pi * 2) / vases_lidar_num_bins
+        vases_bin = int(angle / vases_bin_size)
+        vases_token = max(0, (vases_bin - 0.1) // 0.2)
+        token = max(hazards_token, vases_token)
+        return token
+
+    if is_dense:
+        return SoftDenseConstraint('simple_PointGoal2',
+                                   dfa_string,
+                                   reward_shaping,
+                                   translation_fn=translation_fn,
+                                   gamma=0.99)
+    return Constraint('simple_PointGoal2',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn=translation_fn,
+                      inv_translation_fn=lambda token: [token])
+
+
+@register("simple_PointButton2")
+def point_button_two(is_hard, is_dense, reward_shaping):
+    with open("./baselines/constraint/constraints/proximity.lisp") as dfa_file:
+        dfa_string = dfa_file.read()
+
+    def translation_fn(obs, action, done):
+        print(obs)
+        exit()
+        vel = np.array(obs['velocimeter'][:-1])
+        angle = np.arctan2(vel[1], vel[0])
+
+        hazards_lidar_num_bins = len(obs['hazards_lidar'])
+        hazards_bin_size = (np.pi * 2) / hazards_lidar_num_bins
+        hazards_bin = int(angle / hazards_bin_size)
+        hazards_token = max(0, (hazards_bin - 0.1) // 0.2)
+        vases_lidar_num_bins = len(obs['gremlins_lidar'])
+        vases_bin_size = (np.pi * 2) / vases_lidar_num_bins
+        vases_bin = int(angle / vases_bin_size)
+        vases_token = max(0, (vases_bin - 0.1) // 0.2)
+        token = max(hazards_token, vases_token)
+        return token
+
+    if is_dense:
+        return SoftDenseConstraint('simple_PointButton2',
+                                   dfa_string,
+                                   reward_shaping,
+                                   translation_fn=translation_fn,
+                                   gamma=0.99)
+    return Constraint('simple_PointButton2',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn=translation_fn,
+                      inv_translation_fn=lambda token: [token])
+
+
 # see below for registration
 def half_cheetah_dithering(reward_shaping, joint, k=3):
     def idx_sign(act, idx):

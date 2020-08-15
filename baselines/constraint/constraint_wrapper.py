@@ -5,6 +5,8 @@ import os
 import gym
 import numpy as np
 from gym.spaces.box import Box
+import gym.spaces as spaces
+import tensorflow as tf
 
 import baselines.constraint
 from baselines.constraint.bench.step_monitor import LogBuffer
@@ -19,22 +21,33 @@ class ConstraintEnv(gym.Wrapper):
                  action_history_size=10):
         gym.Wrapper.__init__(self, env)
         if augmentation_type == 'constraint_state_concat' and isinstance(
+                env.observation_space, spaces.Dict):
+            spaces_dict = dict(env.observation_space.spaces)
+            spaces_dict['constraint_state'] = spaces.Tuple(
+                [spaces.MultiBinary(c.num_states) for c in constraints])
+            self.observation_space = spaces.Dict(spaces_dict)
+        """
+        elif augmentation_type == 'constraint_state_concat' and isinstance(
                 env.observation_space, Box):
             constraint_shape_len = sum([c.num_states for c in constraints])
             new_shape = list(env.observation_space.shape)
             new_shape[-1] = new_shape[-1] + constraint_shape_len
             self.observation_space = Box(-np.inf, np.inf, tuple(new_shape),
                                          env.observation_space.dtype)
+        """
         self.constraints = constraints
         self.augmentation_type = augmentation_type
         self.prev_obs = self.env.reset()
         self.action_history = collections.deque([0] * 10)
         if log_dir is not None:
             self.log_dir = log_dir
+            self.save_cost_log = False
+            self.cost_log = LogBuffer(1024, (), dtype=np.float32)
             self.viol_log_dict = dict([(c, LogBuffer(1024, (), dtype=np.bool))
                                        for c in constraints])
-            self.state_log_dict = dict([(c, LogBuffer(1024, (), dtype=np.int32))
-                                       for c in constraints])
+            self.state_log_dict = dict([(c, LogBuffer(1024, (),
+                                                      dtype=np.int32))
+                                        for c in constraints])
             self.rew_mod_log_dict = dict([
                 (c, LogBuffer(1024, (), dtype=np.float32)) for c in constraints
             ])
@@ -44,9 +57,15 @@ class ConstraintEnv(gym.Wrapper):
         atexit.register(self.save)
 
     def augment_obs(self, ob):
-        if self.augmentation_type == 'constraint_state_concat':
-            ob = np.concatenate(
-                [ob] + np.array([c.current_state for c in self.constraints]))
+        if self.augmentation_type == 'constraint_state_concat' and isinstance(
+                self.env.observation_space, spaces.Dict):
+            ob['constraint_state'] = tuple([
+                np.eye(c.num_states)[c.current_state] for c in self.constraints
+            ])
+        elif self.augmentation_type == 'constraint_state_concat':
+            ob = np.concatenate([ob] + np.array([
+                np.eye(c.num_states)[c.current_state] for c in self.constraints
+            ]))
         elif self.augmentation_type == 'constraint_state_product':
             ob = (ob, np.array([c.current_state for c in self.constraints]))
         elif self.augmentation_type == 'action_history_product':
@@ -54,6 +73,8 @@ class ConstraintEnv(gym.Wrapper):
         return ob
 
     def save(self):
+        if self.save_cost_log:
+            self.cost_log.save(os.path.join(self.log_dir, 'cost'))
         [
             log.save(os.path.join(self.log_dir, c.name + '_viols'))
             for (c, log) in self.viol_log_dict.items() if c.is_hard == False
@@ -85,6 +106,9 @@ class ConstraintEnv(gym.Wrapper):
             action = action[0]
         self.action_history.append(action)
         self.action_history.popleft()
+        if 'cost' in info:
+            self.save_cost_log = True
+            self.cost_log.log(info['cost'])
         for c in self.constraints:
             is_vio, rew_mod = c.step(self.prev_obs, action, done)
             rew += rew_mod
@@ -92,6 +116,7 @@ class ConstraintEnv(gym.Wrapper):
                 self.viol_log_dict[c].log(is_vio)
                 self.state_log_dict[c].log(c.current_state)
                 self.rew_mod_log_dict[c].log(rew_mod)
+                self.cost_log
 
         ob = self.augment_obs(ob)
         self.prev_obs = ob

@@ -56,7 +56,8 @@ class ActWrapper(object):
         # DQN doesn't use RNNs so we ignore states and masks
         kwargs.pop('S', None)
         kwargs.pop('M', None)
-        return self._act(np.array(observation)[None], **kwargs), None, None, None
+        return self._act(np.array(observation)[None],
+                         **kwargs), None, None, None
 
     def save_act(self, path=None):
         """Save model to a pickle located at `path`"""
@@ -203,7 +204,9 @@ def learn(env,
         hard_constraints = [c for c in constraints if c.is_hard]
     else:
         hard_constraints = []
-    q_func = build_q_func(network, embed_constraint_state=embed_constraint_state, **network_kwargs)
+    q_func = build_q_func(network,
+                          embed_constraint_state=embed_constraint_state,
+                          **network_kwargs)
 
     # capture the shape outside the closure so that the env object is not serialized
     # by cloudpickle when serializing make_obs_ph
@@ -288,7 +291,10 @@ def learn(env,
                     break
             # Take action and update exploration to the newest value
             if hard_constraints:
-                constraint_mask = reduce(lambda x, y: x + y, [c.violating_mask(env.action_space.n) for c in hard_constraints])
+                constraint_mask = reduce(lambda x, y: x + y, [
+                    c.violating_mask(env.action_space.n)
+                    for c in hard_constraints
+                ])
             else:
                 constraint_mask = np.zeros([env.action_space.n])
             kwargs = {}
@@ -307,7 +313,9 @@ def learn(env,
                 kwargs[
                     'update_param_noise_threshold'] = update_param_noise_threshold
                 kwargs['update_param_noise_scale'] = True
-            action = act(np.array(obs)[None], update_eps=update_eps, hard_constraint_mask=constraint_mask,
+            action = act(np.array(obs)[None],
+                         update_eps=update_eps,
+                         hard_constraint_mask=constraint_mask,
                          **kwargs)[0]
             env_action = action
             reset = False

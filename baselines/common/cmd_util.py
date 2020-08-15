@@ -44,19 +44,20 @@ def make_vec_env(env_id,
     logger_dir = logger.get_dir()
 
     def make_thunk(rank, initializer=None):
-        return lambda: constraint_env_thunk(
-            make_env(env_id=env_id,
-                     env_type=env_type,
-                     mpi_rank=mpi_rank,
-                     subrank=rank,
-                     seed=seed,
-                     reward_scale=reward_scale,
-                     gamestate=gamestate,
-                     flatten_dict_observations=flatten_dict_observations,
-                     wrapper_kwargs=wrapper_kwargs,
-                     env_kwargs=env_kwargs,
-                     logger_dir=logger_dir,
-                     initializer=initializer))
+        return lambda: make_env(env_id=env_id,
+                                env_type=env_type,
+                                mpi_rank=mpi_rank,
+                                subrank=rank,
+                                seed=seed,
+                                reward_scale=reward_scale,
+                                gamestate=gamestate,
+                                flatten_dict_observations=
+                                flatten_dict_observations,
+                                wrapper_kwargs=wrapper_kwargs,
+                                env_kwargs=env_kwargs,
+                                logger_dir=logger_dir,
+                                initializer=initializer,
+                                constraint_env_thunk=constraint_env_thunk)
 
     set_global_seeds(seed)
     if not force_dummy and num_env > 1:
@@ -82,7 +83,8 @@ def make_env(env_id,
              wrapper_kwargs=None,
              env_kwargs=None,
              logger_dir=None,
-             initializer=None):
+             initializer=None,
+             constraint_env_thunk=None):
     if initializer is not None:
         initializer(mpi_rank=mpi_rank, subrank=subrank)
 
@@ -107,8 +109,13 @@ def make_env(env_id,
     else:
         env = gym.make(env_id, **env_kwargs)
 
-    if flatten_dict_observations and isinstance(env.observation_space, gym.spaces.Dict):
-        env = FlattenObservation(env)
+    # EQ: I'm moving this later for mujoco both so that constraint envs have
+    # access to structured observations and so that the augmented observation
+    # can be conatenated into the input
+    if env_type != 'mujoco':
+        if flatten_dict_observations and isinstance(env.observation_space,
+                                                    gym.spaces.Dict):
+            env = FlattenObservation(env)
 
     env.seed(seed + subrank if seed is not None else None)
     env = Monitor(env,
@@ -132,6 +139,13 @@ def make_env(env_id,
     if reward_scale != 1:
         env = retro_wrappers.RewardScaler(env, reward_scale)
 
+    if constraint_env_thunk is not None:
+        env = constraint_env_thunk(env)
+
+    if env_type == 'mujoco':
+        if flatten_dict_observations and isinstance(env.observation_space,
+                                                    gym.spaces.Dict):
+            env = FlattenObservation(env)
     return env
 
 
@@ -159,10 +173,12 @@ def make_robotics_env(env_id, seed, rank=0):
     """
     set_global_seeds(seed)
     env = gym.make(env_id)
-    env = FlattenObservation(FilterObservation(env, ['observation', 'desired_goal']))
-    env = Monitor(
-        env, logger.get_dir() and os.path.join(logger.get_dir(), str(rank)),
-        info_keywords=('is_success',))
+    env = FlattenObservation(
+        FilterObservation(env, ['observation', 'desired_goal']))
+    env = Monitor(env,
+                  logger.get_dir()
+                  and os.path.join(logger.get_dir(), str(rank)),
+                  info_keywords=('is_success', ))
     env.seed(seed)
     return env
 

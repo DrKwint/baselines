@@ -1,20 +1,25 @@
-import sys
-import re
+import functools
 import multiprocessing
 import os.path as osp
-import gym
-from collections import defaultdict
-import tensorflow as tf
-import numpy as np
+import re
 import shutil
-
-from baselines.common.vec_env import VecFrameStack, VecNormalize, VecEnv
-from baselines.common.vec_env.vec_video_recorder import VecVideoRecorder
-from baselines.common.cmd_util import common_arg_parser, parse_unknown_args, make_vec_env, make_env
-from baselines.common.tf_util import get_session
-from baselines.constraint import ConstraintStepMonitor, ConstraintEnv, get_constraint
-from baselines import logger
+import sys
+from collections import defaultdict
 from importlib import import_module
+
+import gym
+import numpy as np
+import tensorflow as tf
+
+import safety_gym
+from baselines import logger
+from baselines.common.cmd_util import (common_arg_parser, make_env,
+                                       make_vec_env, parse_unknown_args)
+from baselines.common.tf_util import get_session
+from baselines.common.vec_env import VecEnv, VecFrameStack, VecNormalize
+from baselines.common.vec_env.vec_video_recorder import VecVideoRecorder
+from baselines.constraint import (ConstraintEnv, ConstraintStepMonitor,
+                                  get_constraint)
 
 try:
     from mpi4py import MPI
@@ -88,55 +93,7 @@ def train(args, extra_args):
     return model, env
 
 
-def build_env(args):
-    ncpu = multiprocessing.cpu_count()
-    if sys.platform == 'darwin': ncpu //= 2
-    nenv = args.num_env or ncpu
-    alg = args.alg
-    seed = args.seed
-
-    env_type, env_id = get_env_type(args)
-
-    if env_type in {'atari', 'retro', 'envs'}:
-        if alg == 'deepq':
-            if args.augmentation is not None: args.augmentation += '_product'
-            env = make_env(env_id,
-                           env_type,
-                           seed=seed,
-                           wrapper_kwargs={'frame_stack': True}, logger_dir=logger.get_dir())
-        elif alg == 'trpo_mpi':
-            if args.augmentation is not None:
-                args.augmentation += '_not_implemented'
-            env = make_env(env_id, env_type, seed=seed)
-        else:
-            if args.augmentation is not None: args.augmentation += '_concat'
-            frame_stack_size = 4
-            env = make_vec_env(env_id,
-                               env_type,
-                               nenv,
-                               seed,
-                               gamestate=args.gamestate,
-                               reward_scale=args.reward_scale)
-            env = VecFrameStack(env, frame_stack_size)
-
-    else:
-        config = tf.ConfigProto(allow_soft_placement=True,
-                                intra_op_parallelism_threads=1,
-                                inter_op_parallelism_threads=1)
-        config.gpu_options.allow_growth = True
-        get_session(config=config)
-
-        flatten_dict_observations = alg not in {'her'}
-        env = make_vec_env(env_id,
-                           env_type,
-                           args.num_env or 1,
-                           seed,
-                           reward_scale=args.reward_scale,
-                           flatten_dict_observations=flatten_dict_observations)
-
-        if env_type == 'mujoco':
-            env = VecNormalize(env, use_tf=True)
-
+def build_constraint_env(env, args):
     if args.constraints is not None:
         if not args.is_hard:
             assert args.reward_shaping is not None
@@ -154,6 +111,65 @@ def build_env(args):
                           constraints,
                           augmentation_type=args.augmentation,
                           log_dir=logger.get_dir()), logger.get_dir())
+    return env
+
+
+def build_env(args):
+    ncpu = multiprocessing.cpu_count()
+    if sys.platform == 'darwin': ncpu //= 2
+    nenv = args.num_env or ncpu
+    alg = args.alg
+    seed = args.seed
+
+    env_type, env_id = get_env_type(args)
+
+    if env_type in {'atari', 'retro', 'envs'}:
+        if alg == 'deepq':
+            if args.augmentation is not None: args.augmentation += '_product'
+            env_thunk = functools.partial(build_constraint_env, args=args)
+            env = make_env(env_id,
+                           env_type,
+                           seed=seed,
+                           wrapper_kwargs={'frame_stack': True},
+                           logger_dir=logger.get_dir())
+        elif alg == 'trpo_mpi':
+            if args.augmentation is not None:
+                args.augmentation += '_not_implemented'
+            env_thunk = functools.partial(build_constraint_env, args=args)
+            env = make_env(env_id, env_type, seed=seed)
+        else:
+            if args.augmentation is not None: args.augmentation += '_concat'
+            env_thunk = functools.partial(build_constraint_env, args=args)
+            frame_stack_size = 4
+            env = make_vec_env(env_id,
+                               env_type,
+                               nenv,
+                               seed,
+                               gamestate=args.gamestate,
+                               reward_scale=args.reward_scale,
+                               constraint_env_thunk=env_thunk)
+            env = VecFrameStack(env, frame_stack_size)
+
+    else:
+        config = tf.ConfigProto(allow_soft_placement=True,
+                                intra_op_parallelism_threads=1,
+                                inter_op_parallelism_threads=1)
+        config.gpu_options.allow_growth = True
+        get_session(config=config)
+
+        if args.augmentation is not None: args.augmentation += '_concat'
+        env_thunk = functools.partial(build_constraint_env, args=args)
+        flatten_dict_observations = alg not in {'her'}
+        env = make_vec_env(env_id,
+                           env_type,
+                           args.num_env or 1,
+                           seed,
+                           reward_scale=args.reward_scale,
+                           flatten_dict_observations=flatten_dict_observations,
+                           constraint_env_thunk=env_thunk)
+
+        if env_type == 'mujoco':
+            env = VecNormalize(env, use_tf=True)
 
     return env
 
@@ -266,7 +282,6 @@ def main(args):
         save_path = osp.expanduser(osp.join(logger.get_dir(), 'model'))
         model.save(save_path)
 
-
     if args.play and False:
         logger.log("Running trained model")
         obs = env.reset()
@@ -275,7 +290,8 @@ def main(args):
                                                'initial_state') else None
         dones = np.zeros((1, ))
 
-        episode_rew = np.zeros(env.num_envs) if isinstance(env, VecEnv) else np.zeros(1)
+        episode_rew = np.zeros(env.num_envs) if isinstance(
+            env, VecEnv) else np.zeros(1)
         while True:
             if state is not None:
                 actions, _, state, _ = model.step(obs, S=state, M=dones)
@@ -293,7 +309,8 @@ def main(args):
 
     env.close()
 
-    shutil.copyfile(osp.join(logger.get_dir(), 'log.txt'), osp.join(logger.get_dir(), 'final_log.txt'))
+    shutil.copyfile(osp.join(logger.get_dir(), 'log.txt'),
+                    osp.join(logger.get_dir(), 'final_log.txt'))
 
     return model
 
