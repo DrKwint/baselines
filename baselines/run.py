@@ -103,7 +103,7 @@ def build_constraint_env(env, args):
         else:
             reward_shaping = [0.] * len(args.constraints)
         constraints = [
-            get_constraint(s)(args.is_hard, args.is_dense, r)
+            get_constraint(s)(args.is_hard, args.is_dense, r, args.is_linear)
             for (s, r) in zip(args.constraints, reward_shaping)
         ]
         env = ConstraintStepMonitor(
@@ -131,7 +131,8 @@ def build_env(args):
                            env_type,
                            seed=seed,
                            wrapper_kwargs={'frame_stack': True},
-                           logger_dir=logger.get_dir())
+                           logger_dir=logger.get_dir(),
+                           constraint_env_thunk=env_thunk)
         elif alg == 'trpo_mpi':
             if args.augmentation is not None:
                 args.augmentation += '_not_implemented'

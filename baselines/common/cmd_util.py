@@ -265,6 +265,7 @@ def common_arg_parser():
                         nargs='+',
                         default=None)
     parser.add_argument('--augmentation', type=str, default=None)
+    parser.add_argument('--is_linear', action='store_true')
     return parser
 
 

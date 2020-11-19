@@ -7,7 +7,7 @@ import skimage
 import math
 
 from baselines.common.atari_wrappers import LazyFrames
-from baselines.constraint.constraint import Constraint, SoftDenseConstraint
+from baselines.constraint.constraint import Constraint, SoftDenseConstraint, CamachoConstraint
 
 mapping = {}
 
@@ -173,7 +173,10 @@ def diver_Seaquest(is_hard, is_dense, reward_shaping):
 
 
 @register('dangerzone_SpaceInvaders')
-def dangerzone_spaceinvaders(is_hard, is_dense, reward_shaping):
+def dangerzone_spaceinvaders(is_hard,
+                             is_dense,
+                             reward_shaping,
+                             is_linear=False):
     with open(
             "./baselines/constraint/constraints/spaceinvaders_dangerzone.lisp"
     ) as dfa_file:
@@ -337,6 +340,12 @@ def dangerzone_spaceinvaders(is_hard, is_dense, reward_shaping):
             c = 'a'
         return inv_translation_dict[c]
 
+    if is_linear:
+        return CamachoConstraint('dangerzone_linear_SpaceInvaders',
+                                 dfa_string,
+                                 reward_shaping,
+                                 translation_fn,
+                                 gamma=.99)
     if is_dense:
         return SoftDenseConstraint('dangerzone_dense_SpaceInvaders',
                                    dfa_string,
@@ -352,7 +361,10 @@ def dangerzone_spaceinvaders(is_hard, is_dense, reward_shaping):
 
 
 @register('paddle_ball_distance_Breakout')
-def paddle_direction_breakout(is_hard, is_dense, reward_shaping):
+def paddle_direction_breakout(is_hard,
+                              is_dense,
+                              reward_shaping,
+                              is_linear=False):
     with open(
             "./baselines/constraint/constraints/int_counter_with_null_reset.lisp"
     ) as dfa_file:
@@ -406,6 +418,12 @@ def paddle_direction_breakout(is_hard, is_dense, reward_shaping):
             print(token)
             exit()
 
+    if is_linear:
+        return CamachoConstraint('paddle_direction_linear_Breakout',
+                                 dfa_string,
+                                 reward_shaping,
+                                 translation_fn,
+                                 gamma=0.99)
     if is_dense:
         return SoftDenseConstraint('paddle_direction_dense_Breakout',
                                    dfa_string,
@@ -421,10 +439,21 @@ def paddle_direction_breakout(is_hard, is_dense, reward_shaping):
 
 
 @register('1d_dithering2_Breakout')
-def one_d_dithering_breakout(is_hard, is_dense, reward_shaping, k=2):
+def one_d_dithering_breakout(is_hard,
+                             is_dense,
+                             reward_shaping,
+                             k=2,
+                             is_linear=False):
     with open("./baselines/constraint/constraints/1d_dithering.lisp"
               ) as dfa_file:
         dfa_string = dfa_file.read()
+    if is_linear:
+        return CamachoConstraint(
+            '1d_dithering2_linear_Breakout',
+            dfa_string,
+            reward_shaping,
+            translation_fn=lambda obs, action, done: action,
+            gamma=0.99)
     if is_dense:
         return SoftDenseConstraint('1d_dithering2_dense_Breakout',
                                    dfa_string,
@@ -440,7 +469,10 @@ def one_d_dithering_breakout(is_hard, is_dense, reward_shaping, k=2):
 
 
 @register('1d_dithering2_SpaceInvaders')
-def one_d_dithering_spaceinvaders(is_hard, is_dense, reward_shaping, k=2):
+def one_d_dithering_spaceinvaders(is_hard,
+                                  is_dense,
+                                  reward_shaping,
+                                  is_linear=False):
     with open("./baselines/constraint/constraints/1d_dithering.lisp"
               ) as dfa_file:
         dfa_string = dfa_file.read()
@@ -448,8 +480,14 @@ def one_d_dithering_spaceinvaders(is_hard, is_dense, reward_shaping, k=2):
     inv_translation_dict = {1: [0, 1], 2: [2, 4], 3: [3, 5]}
     translation_fn = lambda obs, action, done: translation_dict[action]
     inv_translation_fn = lambda token: inv_translation_dict[token]
+    if is_linear:
+        return CamachoConstraint('1d_dithering2_linear_SpaceInvaders',
+                                 dfa_string,
+                                 reward_shaping,
+                                 translation_fn=translation_dict,
+                                 gamma=0.99)
     if is_dense:
-        return SoftDenseConstraint('1d_dithering2_dense_Breakout',
+        return SoftDenseConstraint('1d_dithering2_dense_SpaceInvaders',
                                    dfa_string,
                                    reward_shaping,
                                    translation_dict,
@@ -497,7 +535,17 @@ def build_one_d_actuation(num_actions, k):
 
 
 @register('1d_actuation4_Breakout')
-def oned_actuation_breakout4(is_hard, is_dense, reward_shaping):
+def oned_actuation_breakout4(is_hard,
+                             is_dense,
+                             reward_shaping,
+                             is_linear=False):
+    if is_linear:
+        return CamachoConstraint(
+            '1d_actuation_linear_breakout4',
+            build_one_d_actuation(4, k=4),
+            reward_shaping,
+            translation_fn=lambda obs, action, done: action,
+            gamma=0.99)
     if is_dense:
         return SoftDenseConstraint(
             '1d_actuation_dense_breakout4',
@@ -514,11 +562,20 @@ def oned_actuation_breakout4(is_hard, is_dense, reward_shaping):
 
 
 @register('1d_actuation4_SpaceInvaders')
-def oned_actuation_spaceinvaders4(is_hard, is_dense, reward_shaping):
+def oned_actuation_spaceinvaders4(is_hard,
+                                  is_dense,
+                                  reward_shaping,
+                                  is_linear=False):
     translation_dict = dict([(0, 0), (1, 1), (2, 2), (3, 3), (4, 2), (5, 3)])
     inv_translation_dict = {0: [0], 1: [1], 2: [2, 4], 3: [3, 5]}
     translation_fn = lambda obs, action, done: translation_dict[action]
     inv_translation_fn = lambda token: inv_translation_dict[token]
+    if is_linear:
+        return CamachoConstraint('1d_actuation_linear_SpaceInvaders',
+                                 build_one_d_actuation(4, k=4),
+                                 reward_shaping,
+                                 translation_fn=translation_fn,
+                                 gamma=0.99)
     if is_dense:
         return SoftDenseConstraint('1d_actuation_dense_SpaceInvaders',
                                    build_one_d_actuation(4, k=4),
@@ -534,10 +591,20 @@ def oned_actuation_spaceinvaders4(is_hard, is_dense, reward_shaping):
 
 
 @register("2d_actuation4_Seaquest")
-def twod_actuation4_seaquest(is_hard, is_dense, reward_shaping):
+def twod_actuation4_seaquest(is_hard,
+                             is_dense,
+                             reward_shaping,
+                             is_linear=False):
     with open("./baselines/constraint/constraints/seaquest_actuation.lisp"
               ) as dfa_file:
         dfa_string = dfa_file.read()
+    if is_linear:
+        return CamachoConstraint(
+            '2d_actuation4_linear_Seaquest',
+            dfa_string,
+            reward_shaping,
+            translation_fn=lambda obs, action, done: action,
+            gamma=0.99)
     if is_dense:
         return SoftDenseConstraint(
             '2d_actuation4_dense_Seaquest',
@@ -554,10 +621,20 @@ def twod_actuation4_seaquest(is_hard, is_dense, reward_shaping):
 
 
 @register("2d_dithering4_Seaquest")
-def twod_dithering4_seaquest(is_hard, is_dense, reward_shaping):
+def twod_dithering4_seaquest(is_hard,
+                             is_dense,
+                             reward_shaping,
+                             is_linear=False):
     with open("./baselines/constraint/constraints/seaquest_dithering.lisp"
               ) as dfa_file:
         dfa_string = dfa_file.read()
+    if is_linear:
+        return CamachoConstraint(
+            '2d_dithering4_linear_Seaquest',
+            dfa_string,
+            reward_shaping,
+            translation_fn=lambda obs, action, done: action,
+            gamma=0.99)
     if is_dense:
         return SoftDenseConstraint(
             '2d_dithering4_dense_Seaquest',
@@ -580,7 +657,7 @@ def proximity_point_goal_one(is_hard, is_dense, reward_shaping):
         dfa_string = dfa_file.read()
 
     def translation_fn(obs, action, done):
-        token = max(obs['hazards_lidar']) // 0.1
+        token = max(obs['hazards_lidar'] - 0.6) // 0.04
         return token
 
     if is_dense:
@@ -604,7 +681,7 @@ def proximity_car_goal_one(is_hard, is_dense, reward_shaping):
         dfa_string = dfa_file.read()
 
     def translation_fn(obs, action, done):
-        token = max(obs['hazards_lidar']) // 0.1
+        token = max(obs['hazards_lidar'] - 0.6) // 0.04
         return token
 
     if is_dense:
@@ -621,6 +698,30 @@ def proximity_car_goal_one(is_hard, is_dense, reward_shaping):
                       inv_translation_fn=lambda token: [token])
 
 
+@register("proximity_DoggoGoal1")
+def proximity_doggo_goal_one(is_hard, is_dense, reward_shaping):
+    with open("./baselines/constraint/constraints/proximity_highres.lisp"
+              ) as dfa_file:
+        dfa_string = dfa_file.read()
+
+    def translation_fn(obs, action, done):
+        token = max(obs['hazards_lidar'] - 0.6) // 0.04
+        return token
+
+    if is_dense:
+        return SoftDenseConstraint('proximity_DoggoGoal1',
+                                   dfa_string,
+                                   reward_shaping,
+                                   translation_fn=translation_fn,
+                                   gamma=0.99)
+    return Constraint('proximity_DoggoGoal1',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn=translation_fn,
+                      inv_translation_fn=lambda token: [token])
+
+
 @register("proximity_PointGoal2")
 def proximity_point_goal_two(is_hard, is_dense, reward_shaping):
     with open("./baselines/constraint/constraints/proximity_highres.lisp"
@@ -628,8 +729,8 @@ def proximity_point_goal_two(is_hard, is_dense, reward_shaping):
         dfa_string = dfa_file.read()
 
     def translation_fn(obs, action, done):
-        hazards_token = max(obs['hazards_lidar']) // 0.1
-        vases_token = max(obs['vases_lidar']) // 0.1
+        hazards_token = max(obs['hazards_lidar'] - 0.6) // 0.04
+        vases_token = max(obs['vases_lidar'] - 0.6) // 0.04
         token = max(hazards_token, vases_token)
         return token
 
@@ -654,8 +755,8 @@ def proximity_car_goal_two(is_hard, is_dense, reward_shaping):
         dfa_string = dfa_file.read()
 
     def translation_fn(obs, action, done):
-        hazards_token = max(obs['hazards_lidar']) // 0.1
-        vases_token = max(obs['vases_lidar']) // 0.1
+        hazards_token = max(obs['hazards_lidar'] - 0.6) // 0.04
+        vases_token = max(obs['vases_lidar'] - 0.6) // 0.04
         token = max(hazards_token, vases_token)
         return token
 
@@ -673,6 +774,32 @@ def proximity_car_goal_two(is_hard, is_dense, reward_shaping):
                       inv_translation_fn=lambda token: [token])
 
 
+@register("proximity_DoggoGoal2")
+def proximity_doggo_goal_two(is_hard, is_dense, reward_shaping):
+    with open("./baselines/constraint/constraints/proximity_highres.lisp"
+              ) as dfa_file:
+        dfa_string = dfa_file.read()
+
+    def translation_fn(obs, action, done):
+        hazards_token = max(obs['hazards_lidar'] - 0.6) // 0.04
+        vases_token = max(obs['vases_lidar'] - 0.6) // 0.04
+        token = max(hazards_token, vases_token)
+        return token
+
+    if is_dense:
+        return SoftDenseConstraint('proximity_DoggoGoal2',
+                                   dfa_string,
+                                   reward_shaping,
+                                   translation_fn=translation_fn,
+                                   gamma=0.99)
+    return Constraint('proximity_DoggoGoal2',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn=translation_fn,
+                      inv_translation_fn=lambda token: [token])
+
+
 @register("proximity_PointButton1")
 def proximity_point_button_one(is_hard, is_dense, reward_shaping):
     with open("./baselines/constraint/constraints/proximity_highres.lisp"
@@ -680,10 +807,10 @@ def proximity_point_button_one(is_hard, is_dense, reward_shaping):
         dfa_string = dfa_file.read()
 
     def translation_fn(obs, action, done):
-        hazards_token = max(obs['hazards_lidar']) // 0.1
-        gremlins_token = max(obs['gremlins_lidar']) // 0.1
-        wrong_button_token = max(obs['buttons_lidar'] -
-                                 obs['goal_lidar']) // 0.1
+        hazards_token = max(obs['hazards_lidar'] - 0.6) // 0.04
+        gremlins_token = max(obs['gremlins_lidar'] - 0.6) // 0.04
+        wrong_button_token = max(obs['buttons_lidar'] - obs['goal_lidar'] -
+                                 0.6) // 0.04
         token = max(hazards_token, gremlins_token, wrong_button_token)
         return token
 
@@ -708,10 +835,10 @@ def proximity_car_button_one(is_hard, is_dense, reward_shaping):
         dfa_string = dfa_file.read()
 
     def translation_fn(obs, action, done):
-        hazards_token = max(obs['hazards_lidar']) // 0.1
-        gremlins_token = max(obs['gremlins_lidar']) // 0.1
-        wrong_button_token = max(obs['buttons_lidar'] -
-                                 obs['goal_lidar']) // 0.1
+        hazards_token = max(obs['hazards_lidar'] - 0.6) // 0.04
+        gremlins_token = max(obs['gremlins_lidar'] - 0.6) // 0.04
+        wrong_button_token = max(obs['buttons_lidar'] - obs['goal_lidar'] -
+                                 0.6) // 0.04
         token = max(hazards_token, gremlins_token, wrong_button_token)
         return token
 
@@ -729,6 +856,34 @@ def proximity_car_button_one(is_hard, is_dense, reward_shaping):
                       inv_translation_fn=lambda token: [token])
 
 
+@register("proximity_DoggoButton1")
+def proximity_doggo_button_one(is_hard, is_dense, reward_shaping):
+    with open("./baselines/constraint/constraints/proximity_highres.lisp"
+              ) as dfa_file:
+        dfa_string = dfa_file.read()
+
+    def translation_fn(obs, action, done):
+        hazards_token = max(obs['hazards_lidar'] - 0.6) // 0.04
+        gremlins_token = max(obs['gremlins_lidar'] - 0.6) // 0.04
+        wrong_button_token = max(obs['buttons_lidar'] - obs['goal_lidar'] -
+                                 0.6) // 0.04
+        token = max(hazards_token, gremlins_token, wrong_button_token)
+        return token
+
+    if is_dense:
+        return SoftDenseConstraint('proximity_DoggoButton1',
+                                   dfa_string,
+                                   reward_shaping,
+                                   translation_fn=translation_fn,
+                                   gamma=0.99)
+    return Constraint('proximity_DoggoButton1',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn=translation_fn,
+                      inv_translation_fn=lambda token: [token])
+
+
 @register("proximity_PointButton2")
 def proximity_point_button_two(is_hard, is_dense, reward_shaping):
     with open("./baselines/constraint/constraints/proximity_highres.lisp"
@@ -736,10 +891,10 @@ def proximity_point_button_two(is_hard, is_dense, reward_shaping):
         dfa_string = dfa_file.read()
 
     def translation_fn(obs, action, done):
-        hazards_token = max(obs['hazards_lidar']) // 0.1
-        gremlins_token = max(obs['gremlins_lidar']) // 0.1
-        wrong_button_token = max(obs['buttons_lidar'] -
-                                 obs['goal_lidar']) // 0.1
+        hazards_token = max(obs['hazards_lidar'] - 0.6) // 0.04
+        gremlins_token = max(obs['gremlins_lidar'] - 0.6) // 0.04
+        wrong_button_token = max(obs['buttons_lidar'] - obs['goal_lidar'] -
+                                 0.6) // 0.04
         token = max(hazards_token, gremlins_token, wrong_button_token)
         return token
 
@@ -764,11 +919,11 @@ def proximity_car_button_two(is_hard, is_dense, reward_shaping):
         dfa_string = dfa_file.read()
 
     def translation_fn(obs, action, done):
-        hazards_token = max(obs['hazards_lidar']) // 0.1
-        gremlins_token = max(obs['gremlins_lidar']) // 0.1
-        wrong_button_token = max(obs['buttons_lidar'] -
-                                 obs['goal_lidar']) // 0.1
-        token = max(hazards_token, gremlins_token, wrong_button_token)
+        hazards_token = max(obs['hazards_lidar'] - 0.6) // 0.04
+        gremlins_token = max(obs['gremlins_lidar'] - 0.6) // 0.04
+        wrong_button_token = max(obs['buttons_lidar'] - obs['goal_lidar'] -
+                                 0.6) // 0.04
+        token = max(hazards_token, gremlins_token, wrong_button_token, 0)
         return token
 
     if is_dense:
@@ -778,6 +933,34 @@ def proximity_car_button_two(is_hard, is_dense, reward_shaping):
                                    translation_fn=translation_fn,
                                    gamma=0.99)
     return Constraint('proximity_CarButton2',
+                      dfa_string,
+                      is_hard,
+                      reward_shaping,
+                      translation_fn=translation_fn,
+                      inv_translation_fn=lambda token: [token])
+
+
+@register("proximity_DoggoButton2")
+def proximity_doggo_button_two(is_hard, is_dense, reward_shaping):
+    with open("./baselines/constraint/constraints/proximity_highres.lisp"
+              ) as dfa_file:
+        dfa_string = dfa_file.read()
+
+    def translation_fn(obs, action, done):
+        hazards_token = max(obs['hazards_lidar'] - 0.6) // 0.04
+        gremlins_token = max(obs['gremlins_lidar'] - 0.6) // 0.04
+        wrong_button_token = max(obs['buttons_lidar'] - obs['goal_lidar'] -
+                                 0.6) // 0.04
+        token = max(hazards_token, gremlins_token, wrong_button_token)
+        return token
+
+    if is_dense:
+        return SoftDenseConstraint('proximity_DoggoButton2',
+                                   dfa_string,
+                                   reward_shaping,
+                                   translation_fn=translation_fn,
+                                   gamma=0.99)
+    return Constraint('proximity_DoggoButton2',
                       dfa_string,
                       is_hard,
                       reward_shaping,

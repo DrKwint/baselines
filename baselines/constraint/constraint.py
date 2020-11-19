@@ -2,6 +2,7 @@ from collections import Counter
 
 import numpy as np
 import tensorflow as tf
+from copy import copy
 
 from baselines.constraint.dfa import DFA
 
@@ -45,7 +46,6 @@ class Constraint(object):
         return len(self.dfa.states)
 
     def is_violating(self, obs, action, done):
-        print('token', )
         return self.dfa.step(self.translation_fn(obs, action, done),
                              hypothetical=True)
 
@@ -54,49 +54,125 @@ class Constraint(object):
         for v in self.dfa.violating_inputs:
             for i in self.inv_translation_fn(v):
                 mask += np.eye(num_actions)[i]
+        self.dfa.reset()
         return mask
 
 
-class SoftDenseConstraint(Constraint):
+class CamachoConstraint(Constraint):
     def __init__(self, name, dfa_string, violation_reward, translation_fn,
                  gamma):
-        super(SoftDenseConstraint,
+        super(CamachoConstraint,
               self).__init__(name, dfa_string, False, violation_reward,
                              translation_fn)
         self.gamma = gamma
         # counters for tracking value of each DFA state
         self.prev_state = self.current_state
-        self.episode_visit_count = Counter()
-        self.visit_count = Counter(self.dfa.states)
-        self.violation_count = Counter(self.dfa.accepting_states)
-
-    def get_state_potentials(self):
-        potential = lambda s: self.violation_count[s] / self.visit_count[s]
-        return {s: potential(s) for s in self.dfa.states}
 
     def step(self, obs, action, done):
         is_viol, _ = super().step(obs, action, done)
-        self.episode_visit_count[self.current_state] += 1
 
-        current_viol_propn = (self.violation_count[self.current_state] /
-                              self.visit_count[self.current_state])
-        prev_viol_propn = (self.violation_count[self.prev_state] /
-                           self.visit_count[self.prev_state])
-        rew_mod = (self.gamma * current_viol_propn -
-                   prev_viol_propn) * self.violation_reward
-        if self.prev_state in self.dfa.accepting_states: rew_mod = 0
+        # update reward
+        current_cost_val = self.dfa._steps_to_accept[
+            self.dfa.current_state] / self.dfa._max_steps_to_accept
+        prev_cost_val = self.dfa._steps_to_accept[
+            self.prev_state] / self.dfa._max_steps_to_accept
+        rew_mod = -1 * (self.gamma * current_cost_val -
+                        prev_cost_val) * self.violation_reward
+        self.prev_state = self.current_state
+        return is_viol, rew_mod
 
+
+class SoftDenseConstraint(Constraint):
+    def __init__(self,
+                 name,
+                 dfa_string,
+                 violation_reward,
+                 translation_fn,
+                 gamma,
+                 alpha=0.1,
+                 target_time=40):
+        super(SoftDenseConstraint,
+              self).__init__(name, dfa_string, False, violation_reward,
+                             translation_fn)
+        self.alpha = alpha
+        self.gamma = gamma
+        self.target_time = target_time
+        # counters for tracking value of each DFA state
+        self.prev_state = self.current_state
+
+        self.current_step = 0
+        self.state_buffer = list()
+        self.expected_hitting_time = np.ones(self.num_states) * target_time
+        for accept_state in self.dfa.accepting_states:
+            self.expected_hitting_time[accept_state] = 0.
+        self.empirical_hitting_times = []
+
+    def step(self, obs, action, done):
+        is_viol, _ = super().step(obs, action, done)
+
+        # record state
+        self.state_buffer.append(self.current_state)
+
+        # update reward
+        current_cost_val = (1 / 2)**(
+            self.expected_hitting_time[self.current_state] / self.target_time)
+        prev_cost_val = (1 / 2)**(self.expected_hitting_time[self.prev_state] /
+                                  self.target_time)
+        if self.prev_state in self.dfa.accepting_states: prev_cost_val = 0.
+        rew_mod = (self.gamma * current_cost_val -
+                   prev_cost_val) * self.violation_reward
+
+        # update hitting times
         if is_viol:
-            self.violation_count += self.episode_visit_count
-            self.visit_count += self.episode_visit_count
-            self.episode_visit_count = Counter()
-        if done:
-            self.visit_count += self.episode_visit_count
-            self.episode_visit_count = Counter()
+            self.state_buffer = np.array(self.state_buffer)
+            ep_expected_hitting_time = np.zeros(self.num_states)
+            for i in range(self.num_states):
+                ep_expected_hitting_time[i] = len(self.state_buffer) - np.mean(
+                    np.argwhere(self.state_buffer == i)) - 1
+            self.empirical_hitting_times.append(ep_expected_hitting_time)
+            self.state_buffer = list()
 
         self.prev_state = self.current_state
+
+        if done:
+            if len(self.empirical_hitting_times) == 0:
+                self.state_buffer = list()
+                self.empirical_hitting_times = list()
+                return is_viol, rew_mod
+            if len(self.empirical_hitting_times) == 1:
+                self.empirical_hitting_times = np.array(
+                    self.empirical_hitting_times)
+            else:
+                self.empirical_hitting_times = np.stack(
+                    self.empirical_hitting_times)
+
+            ep_hitting_times = [
+                np.mean([
+                    v for v in self.empirical_hitting_times[:, i]
+                    if not np.isnan(v)
+                ]) for i in range(self.num_states)
+            ]
+            for i in reversed(range(len(self.expected_hitting_time))):
+                if not np.isnan(ep_hitting_times[i]):
+                    self.expected_hitting_time[i] = (
+                        self.alpha * ep_hitting_times[i]) + (
+                            (1 - self.alpha) * self.expected_hitting_time[i])
+                if i != len(self.expected_hitting_time):
+                    self.expected_hitting_time[i] = max(
+                        self.expected_hitting_time[i],
+                        max(self.expected_hitting_time[i:]))
+
+            self.state_buffer = list()
+            self.empirical_hitting_times = list()
+
         return is_viol, rew_mod
 
     def reset(self):
         self.dfa.reset()
         self.prev_state = self.current_state
+
+
+def float_counter_mul(f, c):
+    for (s, v) in dict(c).items():
+        c[s] = f * v
+    return c

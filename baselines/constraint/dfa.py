@@ -13,6 +13,8 @@ class DFA(object):
         self._current_state = start
         self.__make_transition_structure(transition_list)
         self.__make_violations_structure()
+        self._steps_to_accept = self.calculate_steps_to_accept()
+        self._max_steps_to_accept = max(self._steps_to_accept.values())
 
     def __make_transition_structure(self, transition_list):
         self._transitions = {}
@@ -103,3 +105,27 @@ class DFA(object):
     def is_accepting(self):
         """Returns whether or not the DFA is currently in an accept state"""
         return self._current_state in self._accepts
+
+    def calculate_steps_to_accept(self):
+        results = {}
+
+        for s in self.states:
+            if s in self._accepts:
+                results[s] = 0
+                continue
+            bfs_queue = [(s, 0)]
+            completed = set()
+            final_distance = None
+            while bfs_queue:
+                current, distance = bfs_queue.pop(0)
+                children = self._transitions[current].values()
+                if any([acc_s in children for acc_s in self._accepts]):
+                    final_distance = distance + 1
+                    break
+                completed.add(current)
+                add_children = set(children) - (completed.union(
+                    set(bfs_queue)))
+                bfs_queue.extend(list(zip(add_children, [distance + 1] * 100)))
+            assert final_distance is not None
+            results[s] = final_distance
+        return results
